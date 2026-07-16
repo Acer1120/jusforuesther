@@ -1,0 +1,4314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>STARLANCE — CHOIR IV</title>
+<style>
+  html, body { margin:0; padding:0; overflow:hidden; background:#070A18; height:100%;
+               font-family:ui-monospace, Menlo, Consolas, monospace; }
+  #app { position:fixed; inset:0; touch-action:none; }
+  #app canvas { display:block; cursor:none; }
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:2; font-weight:700; }
+  #vig { position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 58%, rgba(4,6,16,.34)); }
+  .overlay { position:fixed; inset:0; z-index:3; display:flex; flex-direction:column;
+             align-items:center; justify-content:center; text-align:center;
+             background:rgba(7,10,24,0.86); color:#E8EEF2; padding:24px; }
+  .hidden { display:none !important; }
+  .btn { background:#FF6B3D; color:#20130A; border:none; border-radius:0;
+         padding:13px 30px; font-family:inherit; font-weight:700; font-size:14px;
+         letter-spacing:3px; cursor:pointer; margin-top:26px; }
+  .title { font-size:34px; letter-spacing:12px; font-weight:700; }
+  .rule { width:46px; height:3px; background:#FF6B3D; margin-top:14px; }
+  .blurb { font-size:13px; line-height:1.9; margin-top:18px; max-width:470px; opacity:.85; }
+  .small { font-size:12px; margin-top:14px; opacity:.55; line-height:1.9; }
+  #score { position:absolute; top:18px; left:50%; transform:translateX(-50%); color:#E8EEF2; font-size:26px; }
+  #combo { position:absolute; top:50px; left:50%; transform:translateX(-50%); color:#E8EEF2; font-size:15px; }
+  #lance { position:absolute; top:74px; left:50%; transform:translateX(-50%); height:3px; background:#FF6B3D; width:0; }
+  #hearts { position:absolute; top:20px; left:20px; color:#FF6B3D; font-size:15px; letter-spacing:4px; }
+  #best { position:absolute; top:20px; right:20px; color:#E8EEF2; opacity:.6; font-size:12px; }
+  #hint { position:absolute; bottom:64px; left:50%; transform:translateX(-50%); color:#E8EEF2;
+          opacity:.6; font-size:12px; white-space:nowrap; }
+  #cross { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:5px; height:5px;
+           background:#E8EEF2; border-radius:50%; opacity:.75; }
+  #dashPip { position:absolute; top:calc(50% + 16px); left:50%; transform:translateX(-50%);
+             width:36px; height:3px; background:rgba(232,238,242,.18); }
+  #dashFill { height:100%; width:100%; background:#E8EEF2; }
+  #heatWrap { position:absolute; bottom:26px; left:50%; transform:translateX(-50%); width:180px; height:7px;
+              background:rgba(232,238,242,.14); }
+  #heatFill { height:100%; width:0; background:#FF6B3D; }
+  .notch { position:absolute; top:-3px; width:1.5px; height:13px; background:rgba(232,238,242,.5); }
+  #heatLbl { position:absolute; bottom:38px; left:50%; transform:translateX(-50%); color:#E8EEF2;
+             opacity:.45; font-size:10px; letter-spacing:2px; }
+  #bossWrap { position:absolute; top:96px; left:50%; transform:translateX(-50%); width:420px; display:none; text-align:center; }
+  #bossName { color:#E8EEF2; font-size:13px; letter-spacing:5px; margin-bottom:6px; }
+  #bossSub { color:#FF4438; font-size:9px; letter-spacing:3px; margin-bottom:7px; opacity:.85; }
+  #bossBarBg { width:100%; height:5px; background:rgba(232,238,242,.14); }
+  #bossBarFill { height:100%; width:100%; background:#FF4438; }
+  #bossState { color:#E8EEF2; opacity:.5; font-size:9px; letter-spacing:2px; margin-top:6px; }
+  #titleCard { position:absolute; top:34%; left:50%; transform:translateX(-50%); text-align:center; opacity:0; }
+  #titleBig { color:#E8EEF2; font-size:44px; letter-spacing:16px; font-weight:700; text-shadow:0 0 24px rgba(255,68,56,.5); }
+  #titleSmall { color:#FF4438; font-size:12px; letter-spacing:6px; margin-top:10px; }
+  #ret { position:absolute; transform:translate(-50%,-50%); display:none; }
+  #ret svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+  #retRing { position:absolute; inset:-14px; border-radius:50%; display:none; }
+  .arrow { position:absolute; width:0; height:0; border-left:7px solid transparent;
+           border-right:7px solid transparent; border-bottom:12px solid #FF4438;
+           opacity:0; transform-origin:50% 70%; }
+  .padBtn { position:fixed; right:22px; z-index:2; width:62px; height:62px; border-radius:50%;
+            border:2px solid #FF6B3D; color:#FF6B3D; background:rgba(7,10,24,.6);
+            font-family:inherit; font-weight:700; font-size:11px; letter-spacing:1px; display:none; }
+  #flareBtn { bottom:34px; }
+  #dashBtn { bottom:110px; border-color:#E8EEF2; color:#E8EEF2; }
+  #flashRed { position:absolute; inset:0; opacity:0;
+              background:radial-gradient(ellipse at center, transparent 40%, rgba(255,60,50,.5)); }
+  #flashHit { position:absolute; inset:0; opacity:0; background:#fff; }
+  #tintSlow { position:absolute; inset:0; opacity:0;
+              background:radial-gradient(ellipse at center, transparent 55%, rgba(70,110,255,.22)); }
+  .pop { position:absolute; transform:translate(-50%,-50%); pointer-events:none;
+         text-shadow:0 0 8px rgba(0,0,0,.6); }
+  .stat { font-size:13px; margin-top:16px; line-height:2; opacity:.8; }
+  .bigNum { font-size:46px; font-weight:700; margin-top:14px; }
+  .tag { font-size:15px; letter-spacing:6px; font-weight:700; color:#FF6B3D; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="hud">
+  <div id="vig"></div>
+  <div id="score"></div><div id="combo"></div><div id="lance"></div>
+  <div id="hearts"></div><div id="best"></div><div id="hint"></div>
+  <div id="flashRed"></div><div id="flashHit"></div><div id="tintSlow"></div>
+  <div id="heatLbl">HEAT</div>
+  <div id="heatWrap"><div id="heatFill"></div>
+    <div class="notch" style="left:20%"></div>
+    <div class="notch" style="left:30%"></div>
+    <div class="notch" style="left:55%"></div>
+  </div>
+  <div id="bossWrap">
+    <div id="bossName">TESSERON</div>
+    <div id="bossSub">FOURTH OF THE CHOIR · THE FOUNDATION</div>
+    <div id="bossBarBg"><div id="bossBarFill"></div></div>
+    <div id="bossState"></div>
+  </div>
+  <div id="titleCard"><div id="titleBig">TESSERON</div><div id="titleSmall">FOURTH OF THE CHOIR · THE FOUNDATION</div></div>
+  <div id="ret">
+    <svg viewBox="-60 -60 120 120">
+      <g id="retSpin" opacity="0.7">
+        <path d="M 54 0 A 54 54 0 0 1 18.5 50.7" fill="none" stroke="#FF4438" stroke-width="1.4"/>
+        <path d="M -54 0 A 54 54 0 0 1 -18.5 -50.7" fill="none" stroke="#FF4438" stroke-width="1.4"/>
+      </g>
+      <g transform="rotate(-90)"><circle id="retCirc" r="40" fill="none" stroke="#FF4438" stroke-width="1.6" stroke-dasharray="251.4" stroke-dashoffset="251.4"/></g>
+      <g id="retBr" fill="none" stroke="#FF4438" stroke-width="2.2" opacity="0">
+        <path d="M -34 -20 L -34 -34 L -20 -34"/><path d="M 20 -34 L 34 -34 L 34 -20"/>
+        <path d="M 34 20 L 34 34 L 20 34"/><path d="M -20 34 L -34 34 L -34 20"/>
+      </g>
+      <g id="retTicks" stroke="#FF4438" stroke-width="1.5" opacity="0">
+        <line x1="0" y1="-52" x2="0" y2="-45"/><line x1="0" y1="45" x2="0" y2="52"/>
+        <line x1="-52" y1="0" x2="-45" y2="0"/><line x1="45" y1="0" x2="52" y2="0"/>
+      </g>
+      <rect id="retCore" x="-3" y="-3" width="6" height="6" fill="#FF4438" transform="rotate(45)" opacity="0"/>
+    </svg>
+    <div id="retRing"></div>
+  </div>
+  <div class="arrow" id="ar0"></div><div class="arrow" id="ar1"></div>
+  <div class="arrow" id="ar2"></div><div class="arrow" id="ar3"></div>
+  <div id="cross"></div>
+  <div id="dashPip"><div id="dashFill"></div></div>
+</div>
+<button id="flareBtn" class="padBtn">FLARE<br>20</button>
+<button id="dashBtn" class="padBtn">DASH</button>
+
+<div id="menu" class="overlay">
+  <div class="title">TESSERON</div>
+  <div class="rule"></div>
+  <div class="small" id="menuControls"></div>
+  <button class="btn" id="startBtn">IGNITE</button>
+</div>
+
+<div id="resume" class="overlay hidden">
+  <div class="tag">PAUSED</div>
+  <div class="blurb">Mouse released.</div>
+  <button class="btn" id="resumeBtn">CLICK TO RESUME</button>
+</div>
+
+<div id="over" class="overlay hidden">
+  <div class="tag">SHATTERED</div>
+  <div class="bigNum" id="finalScore"></div>
+  <div class="small hidden" id="bestTag" style="color:#FFD98A;letter-spacing:3px;">SESSION BEST</div>
+  <div class="stat" id="finalStats"></div>
+  <button class="btn" id="againBtn">AGAIN</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+"use strict";
+
+// ================= constants =================
+var EMBER = 0xff6b3d, HOT = 0xfff3e2, REDC = 0xff4438;
+var CHALK = "#E8EEF2", GOLD = "#FFD98A", REDS = "#FF4438";
+var H_STEP = 1 / 120, SENS = 0.0023;
+var MOVE_MAX = 16, MOVE_ACCEL = 62, FR_IDLE = 4.2, FR_MOVE = 0.7;
+var ARENA_R = 60, GROUND_Y = -7, CEIL_Y = GROUND_Y + 26;
+var GRAV = 16, HOVER_ALT = 2.5;
+var BLADE_R = 9.5, LANCE_R = 85, HIT_R = 5.2, FIN_R = 6.5;
+var COST_FLARE = 20, COST_CLEAVE = 30, COST_SKEWER = 55;
+var DASH_DUR = 0.13, DASH_CD = 0.75;
+var isTouch = ("ontouchstart" in window);
+
+function $(id) { return document.getElementById(id); }
+function show(el) { el.classList.remove("hidden"); }
+function hideEl(el) { el.classList.add("hidden"); }
+function damp(k, dt) { return 1 - Math.exp(-k * dt); }
+function clampN(x, a, b) { return x < a ? a : x > b ? b : x; }
+function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+function easeHeavy(t) { var a = Math.pow(t, 2.2), b = Math.pow(1 - t, 1.6); return a / (a + b); }
+function easeOutBack(t) { var c = 1.70158; var u = t - 1; return 1 + (c + 1) * u * u * u + c * u * u; }
+function wrapAngle(a) { while (a > Math.PI) a -= 6.28318; while (a < -Math.PI) a += 6.28318; return a; }
+function randDir() {
+  var u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+  return new THREE.Vector3(s * Math.cos(t), u, s * Math.sin(t));
+}
+
+// ================= audio =================
+var AC = null, master, windGain, windFilt;
+function audioEnsure() {
+  if (AC) { if (AC.state === "suspended") AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = 0.5; master.connect(AC.destination);
+    var len = AC.sampleRate * 1.5;
+    var buf = AC.createBuffer(1, len, AC.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    var src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+    windFilt = AC.createBiquadFilter(); windFilt.type = "bandpass"; windFilt.Q.value = 0.7;
+    windGain = AC.createGain(); windGain.gain.value = 0;
+    src.connect(windFilt); windFilt.connect(windGain); windGain.connect(master);
+    src.start();
+  } catch (e) { AC = null; }
+}
+function blip(f0, f1, dur, type, vol, delay) {
+  if (!AC) return;
+  try {
+    var t = AC.currentTime + (delay || 0);
+    var o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+function burstNoise(dur, vol, f, delay) {
+  if (!AC) return;
+  try {
+    var t = AC.currentTime + (delay || 0), n = Math.floor(AC.sampleRate * dur);
+    var b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0);
+    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    var s = AC.createBufferSource(); s.buffer = b;
+    var fl = AC.createBiquadFilter(); fl.type = "lowpass"; fl.frequency.value = f;
+    var g = AC.createGain(); g.gain.value = vol;
+    s.connect(fl); fl.connect(g); g.connect(master); s.start(t);
+  } catch (e) {}
+}
+var PENT = [0, 3, 5, 7, 10, 12, 15, 17, 19];
+var sfx = {
+  wind: function (x) {
+    if (!AC) return;
+    var t = AC.currentTime;
+    windGain.gain.setTargetAtTime(Math.min(0.13, x * 0.13), t, 0.08);
+    windFilt.frequency.setTargetAtTime(200 + x * 1900, t, 0.08);
+  },
+  lance: function () { blip(180, 900, 0.12, "sine", 0.1); burstNoise(0.09, 0.1, 2400); },
+  cleaveS: function () { blip(160, 760, 0.11, "sine", 0.1); blip(200, 980, 0.12, "sine", 0.09, 0.09); burstNoise(0.14, 0.12, 2000); },
+  chargeS: function () { blip(240, 720, 0.4, "sine", 0.06); },
+  skewerS: function () { blip(120, 1400, 0.2, "sawtooth", 0.14); burstNoise(0.22, 0.2, 3800); blip(60, 34, 0.3, "sine", 0.2); },
+  flareS: function () { blip(70, 36, 0.5, "sine", 0.3); burstNoise(0.3, 0.2, 900); },
+  denied: function () { blip(110, 82, 0.1, "square", 0.12); },
+  kill: function (c) {
+    var f = 392 * Math.pow(2, PENT[Math.min(8, c - 1)] / 12);
+    blip(f, f, 0.14, "sine", 0.16); blip(f * 2, f * 2, 0.08, "sine", 0.06);
+    burstNoise(0.08, 0.14, 3200); blip(52, 30, 0.14, "sine", 0.2);
+  },
+  hurtS: function () { blip(160, 26, 0.5, "sawtooth", 0.3); burstNoise(0.25, 0.26, 500); },
+  lockS: function () { blip(1200, 1500, 0.03, "sine", 0.03); },
+  over: function () { blip(220, 40, 1.2, "sine", 0.22); burstNoise(0.5, 0.2, 700); },
+  begin: function () { blip(220, 440, 0.16, "sine", 0.1); blip(330, 660, 0.22, "sine", 0.06); },
+  dashS: function () { burstNoise(0.12, 0.16, 2800); blip(300, 720, 0.08, "sine", 0.06); },
+  clank: function () { blip(340, 170, 0.07, "square", 0.16); blip(760, 700, 0.04, "triangle", 0.1); burstNoise(0.05, 0.12, 4200); },
+  whoosh: function (st) {
+    burstNoise(0.18 + st * 0.03, 0.1, 1500 - st * 120);
+    blip(220 - st * 18, 75, 0.2 + st * 0.04, "sawtooth", 0.07);
+  },
+  chink: function (st) {
+    blip(1150 + st * 200, 880, 0.05, "triangle", 0.12);
+    blip(92 - st * 7, 40, 0.15 + st * 0.03, "sine", 0.2);
+    burstNoise(0.05, 0.12, 5600);
+  },
+  launchS: function () { blip(180, 620, 0.16, "sine", 0.14); burstNoise(0.1, 0.14, 3000); },
+  boomS: function () { blip(58, 28, 0.4, "sine", 0.3); burstNoise(0.28, 0.26, 600); },
+  boltFire: function () { blip(520, 260, 0.1, "sine", 0.05); },
+  boltPop: function () { blip(900, 1400, 0.05, "sine", 0.07); burstNoise(0.04, 0.08, 5000); },
+  perfectS: function () { blip(880, 1760, 0.14, "sine", 0.12); blip(1320, 2200, 0.1, "sine", 0.07, 0.05); },
+};
+
+// ================= renderer / scene =================
+var renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+$("app").appendChild(renderer.domElement);
+var canvas = renderer.domElement;
+
+var scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x101830, 0.011);
+var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 900);
+camera.rotation.order = "YXZ";
+
+var dome = new THREE.Mesh(
+  new THREE.SphereGeometry(600, 24, 16),
+  new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    vertexShader: "varying vec3 vDir; void main(){ vDir=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+    fragmentShader:
+      "varying vec3 vDir; void main(){ float h=vDir.y;" +
+      " vec3 top=vec3(0.05,0.075,0.175); vec3 hor=vec3(0.66,0.29,0.22); vec3 low=vec3(0.04,0.055,0.12);" +
+      " float band=exp(-abs(h)*9.0);" +
+      " vec3 c=mix(h>0.0?top:low,hor,band*0.7);" +
+      " gl_FragColor=vec4(c,1.0); }",
+  })
+);
+scene.add(dome);
+
+(function () {
+  var n = 900, pos = new Float32Array(n * 3);
+  for (var i = 0; i < n; i++) {
+    var v = randDir().multiplyScalar(420 + Math.random() * 120);
+    pos[i * 3] = v.x;
+    pos[i * 3 + 1] = Math.abs(v.y) * (Math.random() < 0.85 ? 1 : -0.3);
+    pos[i * 3 + 2] = v.z;
+  }
+  var g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xbcc8e8, size: 1.4, sizeAttenuation: false, transparent: true, opacity: 0.7, fog: false })));
+})();
+
+var shell = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(ARENA_R + 2, 2),
+  new THREE.MeshBasicMaterial({ color: 0x8fa3d9, wireframe: true, transparent: true, opacity: 0.06 })
+);
+scene.add(shell);
+
+// ground with grid + arena edge glow
+var groundMat = new THREE.ShaderMaterial({
+  fog: false,
+  uniforms: { uSky: { value: new THREE.Color(0x0d1428) } },
+  vertexShader:
+    "varying vec3 vW;\n" +
+    "void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz;\n" +
+    "  gl_Position = projectionMatrix * viewMatrix * w; }",
+  fragmentShader:
+    "uniform vec3 uSky; varying vec3 vW;\n" +
+    "void main(){\n" +
+    "  vec2 c = vW.xz / 6.0;\n" +
+    "  vec2 g = abs(fract(c - 0.5) - 0.5) / fwidth(c);\n" +
+    "  float line = 1.0 - min(min(g.x, g.y), 1.0);\n" +
+    "  float dCam = distance(vW, cameraPosition);\n" +
+    "  vec3 col = mix(vec3(0.028, 0.04, 0.082), uSky, smoothstep(30.0, 120.0, dCam));\n" +
+    "  col += vec3(0.12, 0.19, 0.34) * line * (1.0 - smoothstep(12.0, 65.0, dCam));\n" +
+    "  float er = abs(length(vW.xz) - 59.5);\n" +
+    "  col += vec3(1.0, 0.42, 0.24) * (1.0 - smoothstep(0.0, 1.4, er)) * 0.3;\n" +
+    "  gl_FragColor = vec4(col, 1.0);\n" +
+    "}",
+});
+groundMat.extensions = { derivatives: true };
+var ground = new THREE.Mesh(new THREE.CircleGeometry(170, 48), groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = GROUND_Y;
+scene.add(ground);
+
+// solid hex-crystal monoliths: visuals AND collision AND line of sight
+var pillars = [];
+var pillarMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6), new THREE.MeshBasicMaterial({ color: 0x0a0e1c }), 12);
+(function () {
+  var tmpO = new THREE.Object3D();
+  for (var i = 0; i < 12; i++) {
+    var ang = (i / 12) * 6.283 + Math.random() * 0.5;
+    var rad = 40 + Math.random() * 16;
+    var r = 1.1 + Math.random() * 1.4;
+    var hgt = 8 + Math.random() * 14;
+    var px = Math.cos(ang) * rad, pz = Math.sin(ang) * rad;
+    pillars.push({ x: px, z: pz, r: r, top: GROUND_Y + hgt });
+    tmpO.position.set(px, GROUND_Y + hgt / 2, pz);
+    tmpO.scale.set(r, hgt, r);
+    tmpO.rotation.set(0, Math.random() * 3.14, 0);
+    tmpO.updateMatrix();
+    pillarMesh.setMatrixAt(i, tmpO.matrix);
+  }
+  pillarMesh.instanceMatrix.needsUpdate = true;
+})();
+scene.add(pillarMesh);
+
+function makeShadowMat(op) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, fog: false,
+    uniforms: { uOp: { value: op }, uHot: { value: 0 } },
+    vertexShader:
+      "varying vec2 vUv;\n" +
+      "void main(){ vUv = uv; vec4 mv = vec4(position,1.0);\n" +
+      "  #ifdef USE_INSTANCING\n    mv = instanceMatrix * mv;\n  #endif\n" +
+      "  gl_Position = projectionMatrix * modelViewMatrix * mv; }",
+    fragmentShader:
+      "uniform float uOp; uniform float uHot; varying vec2 vUv;\n" +
+      "void main(){ float r = length(vUv - 0.5) * 2.0;\n" +
+      "  float a = (1.0 - smoothstep(0.2, 1.0, r)) * uOp;\n" +
+      "  vec3 c = mix(vec3(0.0, 0.0, 0.02), vec3(1.0, 0.45, 0.25), uHot);\n" +
+      "  gl_FragColor = vec4(c, a); }",
+  });
+}
+var playerShadow = new THREE.Mesh(new THREE.CircleGeometry(1.5, 24), makeShadowMat(0.5));
+playerShadow.rotation.x = -Math.PI / 2;
+scene.add(playerShadow);
+
+// ember impact beams (kills) — beamAt supports color
+var beams = [];
+(function () {
+  var beamGeo = new THREE.BoxGeometry(1, 1, 1);
+  for (var i = 0; i < 8; i++) {
+    var bm = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: EMBER, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    bm.visible = false;
+    scene.add(bm);
+    beams.push({ m: bm, t: 1, dur: 1 });
+  }
+})();
+function beamAt(x, yTop, z, color) {
+  for (var i = 0; i < beams.length; i++) {
+    var b = beams[i];
+    if (b.t >= b.dur) {
+      b.t = 0; b.dur = 0.32; b.m.visible = true;
+      b.m.material.color.setHex(color || EMBER);
+      var hgt = Math.max(0.6, yTop - GROUND_Y);
+      b.m.position.set(x, GROUND_Y + hgt / 2, z);
+      b.m.scale.set(0.14, hgt, 0.14);
+      return;
+    }
+  }
+}
+
+var DUST_N = 260;
+var dustPos = new Float32Array(DUST_N * 3);
+for (var di = 0; di < DUST_N; di++) {
+  dustPos[di * 3] = (Math.random() - 0.5) * 70;
+  dustPos[di * 3 + 1] = (Math.random() - 0.5) * 70;
+  dustPos[di * 3 + 2] = (Math.random() - 0.5) * 70;
+}
+var dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+scene.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0x8fa3d9, size: 0.09, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })));
+
+// player + dash afterimage ghosts
+var player = new THREE.Group();
+var body = new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0), new THREE.MeshBasicMaterial({ color: HOT }));
+body.scale.set(0.55, 1.9, 0.55);
+var glow = new THREE.Mesh(new THREE.SphereGeometry(1.05, 16, 12), new THREE.MeshBasicMaterial({ color: EMBER, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }));
+player.add(body); player.add(glow);
+scene.add(player);
+
+var ghosts = [];
+(function () {
+  for (var i = 0; i < 4; i++) {
+    var gm = new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0), new THREE.MeshBasicMaterial({ color: EMBER, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    gm.scale.set(0.55, 1.9, 0.55);
+    gm.visible = false;
+    scene.add(gm);
+    ghosts.push({ m: gm, life: 0 });
+  }
+})();
+function spawnGhost() {
+  for (var i = 0; i < ghosts.length; i++) {
+    var g = ghosts[i];
+    if (g.life <= 0) {
+      g.life = 0.25;
+      g.m.visible = true;
+      g.m.position.copy(player.position);
+      g.m.quaternion.copy(player.quaternion);
+      return;
+    }
+  }
+}
+
+// ribbon trail
+var TRAIL_N = 46;
+var trailGeo = new THREE.BufferGeometry();
+var tPos = new Float32Array(TRAIL_N * 2 * 3);
+var tFade = new Float32Array(TRAIL_N * 2);
+var tIdx = [];
+for (var ti = 0; ti < TRAIL_N - 1; ti++) { var a = ti * 2; tIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+trailGeo.setAttribute("position", new THREE.BufferAttribute(tPos, 3));
+trailGeo.setAttribute("aFade", new THREE.BufferAttribute(tFade, 1));
+trailGeo.setIndex(tIdx);
+var trail = new THREE.Mesh(trailGeo, new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+  uniforms: { uHead: { value: new THREE.Color(0xfff3e2) }, uTail: { value: new THREE.Color(EMBER) } },
+  vertexShader: "attribute float aFade; varying float vF; void main(){ vF=aFade; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+  fragmentShader: "uniform vec3 uHead; uniform vec3 uTail; varying float vF; void main(){ gl_FragColor=vec4(mix(uTail,uHead,vF), vF*0.85); }",
+}));
+trail.frustumCulled = false;
+scene.add(trail);
+var trailPts = [];
+
+// ================= enemy types: per-instance fresnel crystal shader =================
+var eMat = new THREE.ShaderMaterial({
+  fog: false,
+  uniforms: {
+    uTime: { value: 0 },
+    uRim: { value: new THREE.Color(0xa9dbe4) },
+    uCore: { value: new THREE.Color(0x05070f) },
+    uSky: { value: new THREE.Color(0x101830) },
+  },
+  vertexShader:
+    "attribute float aFlash; attribute float aTel; attribute float aDmg;\n" +
+    "varying vec3 vN; varying vec3 vW;\n" +
+    "varying float vFl; varying float vTe; varying float vDm;\n" +
+    "void main(){\n" +
+    "  vFl = aFlash; vTe = aTel; vDm = aDmg;\n" +
+    "  vec4 mv = vec4(position, 1.0);\n" +
+    "  vec3 nrm = normal;\n" +
+    "  #ifdef USE_INSTANCING\n" +
+    "    mv = instanceMatrix * mv;\n" +
+    "    nrm = mat3(instanceMatrix) * nrm;\n" +
+    "  #endif\n" +
+    "  vec4 world = modelMatrix * mv;\n" +
+    "  vW = world.xyz;\n" +
+    "  vN = normalize(mat3(modelMatrix) * nrm);\n" +
+    "  gl_Position = projectionMatrix * viewMatrix * world;\n" +
+    "}",
+  fragmentShader:
+    "uniform float uTime; uniform vec3 uRim; uniform vec3 uCore; uniform vec3 uSky;\n" +
+    "varying vec3 vN; varying vec3 vW;\n" +
+    "varying float vFl; varying float vTe; varying float vDm;\n" +
+    "void main(){\n" +
+    "  vec3 V = normalize(cameraPosition - vW);\n" +
+    "  float d = length(cameraPosition - vW);\n" +
+    "  float fres = pow(1.0 - abs(dot(V, normalize(vN))), 2.0);\n" +
+    "  float distBoost = smoothstep(18.0, 70.0, d) * 0.8;\n" +
+    "  float pulse = 0.92 + 0.08 * sin(uTime * 2.2 + vW.x * 0.6);\n" +
+    "  vec3 rim = mix(uRim, vec3(1.0, 0.28, 0.22), clamp(vTe, 0.0, 1.0));\n" +
+    "  float telPulse = 1.0 + vTe * (0.32 + 0.18 * sin(uTime * 7.0));\n" +
+    "  vec3 core = mix(uCore, uSky, smoothstep(28.0, 90.0, d) * 0.55);\n" +
+    "  float crack = vDm * max(0.0, sin(vW.x * 7.0 + vW.y * 9.0 + vW.z * 8.0)) * 0.35;\n" +
+    "  vec3 c = core + rim * fres * (1.0 + distBoost + vDm * 0.6) * pulse * telPulse;\n" +
+    "  c += vec3(1.0, 0.5, 0.35) * crack;\n" +
+    "  c += vec3(1.0) * vFl;\n" +
+    "  gl_FragColor = vec4(c, 1.0);\n" +
+    "}",
+});
+var ETYPES = {
+  tesseron: { cap: 1,  hp: 60, r: 2.2, score: 1000 },
+  drone:    { cap: 18, hp: 1, r: 1.1,  score: 10 },
+  dart:     { cap: 10, hp: 1, r: 0.95, score: 15 },
+  weaver:   { cap: 8,  hp: 2, r: 1.2,  score: 20 },
+  sentinel: { cap: 4,  hp: 6, r: 2.1,  score: 60 },
+  zenith:   { cap: 2,  hp: 3, r: 1.6,  score: 40 },
+};
+var EGEOS = {
+  tesseron: new THREE.OctahedronGeometry(1.6, 0),
+  drone: new THREE.OctahedronGeometry(0.95, 0),
+  dart: new THREE.TetrahedronGeometry(1.05, 0),
+  weaver: new THREE.IcosahedronGeometry(1.05, 0),
+  sentinel: new THREE.BoxGeometry(3.0, 2.4, 2.4),
+  zenith: new THREE.IcosahedronGeometry(1.55, 1),
+};
+var EM = {};
+var dummy = new THREE.Object3D();
+var SHADOW_CAP = 0;
+(function () {
+  for (var key in ETYPES) {
+    var cfg = ETYPES[key];
+    SHADOW_CAP += cfg.cap;
+    var geo = EGEOS[key];
+    var fl = new THREE.InstancedBufferAttribute(new Float32Array(cfg.cap), 1);
+    var tl = new THREE.InstancedBufferAttribute(new Float32Array(cfg.cap), 1);
+    var dm = new THREE.InstancedBufferAttribute(new Float32Array(cfg.cap), 1);
+    geo.setAttribute("aFlash", fl);
+    geo.setAttribute("aTel", tl);
+    geo.setAttribute("aDmg", dm);
+    var mesh = new THREE.InstancedMesh(geo, eMat, cfg.cap);
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    EM[key] = { mesh: mesh, fl: fl, tl: tl, dm: dm, cap: cfg.cap };
+    dummy.scale.setScalar(0); dummy.updateMatrix();
+    for (var i = 0; i < cfg.cap; i++) mesh.setMatrixAt(i, dummy.matrix);
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+})();
+var eShadow = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 16), makeShadowMat(0.4), SHADOW_CAP);
+eShadow.frustumCulled = false;
+scene.add(eShadow);
+dummy.scale.setScalar(0); dummy.updateMatrix();
+for (var zs = 0; zs < SHADOW_CAP; zs++) eShadow.setMatrixAt(zs, dummy.matrix);
+eShadow.instanceMatrix.needsUpdate = true;
+
+// shards
+var MAXS = 220;
+var sGeo = new THREE.TetrahedronGeometry(0.22, 0);
+var shardsEmber = new THREE.InstancedMesh(sGeo, new THREE.MeshBasicMaterial({ color: EMBER, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }), MAXS);
+var shardsChalk = new THREE.InstancedMesh(sGeo, new THREE.MeshBasicMaterial({ color: 0xdfe8f5, transparent: true, opacity: 0.9 }), MAXS);
+shardsEmber.frustumCulled = false; shardsChalk.frustumCulled = false;
+scene.add(shardsEmber); scene.add(shardsChalk);
+var shardPool = [];
+for (var si0 = 0; si0 < MAXS; si0++) shardPool.push({ life: 0, max: 1, p: new THREE.Vector3(), v: new THREE.Vector3(), r: new THREE.Euler(), rv: new THREE.Vector3(), s: 1, ember: si0 % 2 === 0 });
+for (var zj = 0; zj < MAXS; zj++) { shardsEmber.setMatrixAt(zj, dummy.matrix); shardsChalk.setMatrixAt(zj, dummy.matrix); }
+shardsEmber.instanceMatrix.needsUpdate = true; shardsChalk.instanceMatrix.needsUpdate = true;
+
+function burstShards(pos, n, speed, emberRatio, along, size) {
+  var made = 0;
+  for (var i = 0; i < MAXS; i++) {
+    var s = shardPool[i];
+    if (made >= n) break;
+    if (s.life > 0) continue;
+    made++;
+    s.life = s.max = 0.5 + Math.random() * 0.35;
+    s.p.copy(pos);
+    if (along) {
+      s.v.copy(along).multiplyScalar(speed * (0.7 + Math.random() * 0.8));
+      s.v.x += (Math.random() - 0.5) * 5; s.v.y += (Math.random() - 0.5) * 5; s.v.z += (Math.random() - 0.5) * 5;
+    } else {
+      s.v.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(speed * (0.4 + Math.random()));
+    }
+    s.r.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+    s.rv.set((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14);
+    s.s = (0.7 + Math.random() * 1.1) * (size || 1);
+    s.ember = Math.random() < emberRatio;
+  }
+}
+
+// rings (billboard or flat)
+var rings = [];
+for (var ri = 0; ri < 12; ri++) {
+  var rm = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 40), new THREE.MeshBasicMaterial({ color: EMBER, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  rm.visible = false; scene.add(rm);
+  rings.push({ m: rm, t: 1, dur: 1, grow: 7, flat: false });
+}
+function ringAt(pos, dur, color, grow, flat) {
+  for (var i = 0; i < rings.length; i++) {
+    var r = rings[i];
+    if (r.t >= r.dur) { r.t = 0; r.dur = dur; r.grow = grow || 7; r.flat = !!flat; r.m.position.copy(pos); r.m.material.color.setHex(color); r.m.visible = true; return; }
+  }
+}
+
+// ---- swept blade ribbons: the slash is real 3D geometry traced by the blade ----
+var BLADE_LEN = 6.8, BLADE_LEN_FIN = 7.8, RIB_N = 40;
+// every swing is a rotation of the aim axis itself: all four cuts pass through
+// ONE focus point directly in front (the locked enemy). Together they draw a star.
+var CHOREO = [
+  { dx: -0.55, dy: -0.84, th: 1.75, dur: 0.11, wu: 0.09, set: 0.13, pw: 1.0 },  // steep descending cut from high-right
+  { dx:  0.94, dy:  0.34, th: 1.8,  dur: 0.11, wu: 0.08, set: 0.13, pw: 1.0 },  // shallow rising backhand to the right
+  { dx: -0.28, dy: -0.96, th: 1.7,  dur: 0.12, wu: 0.11, set: 0.15, pw: 1.15 }, // canted overhead, drifting left
+  { dx:  1.0,  dy:  0.0,  th: 0.001, dur: 0.14, wu: 0.14, set: 0.18, pw: 1.35, thrust: true } // the ender: a lunging thrust through the focus
+];
+var ribbons = [];
+(function () {
+  for (var i = 0; i < 3; i++) {
+    var geo = new THREE.BufferGeometry();
+    var pos = new Float32Array(RIB_N * 2 * 3);
+    var fad = new Float32Array(RIB_N * 2);
+    var idx = [];
+    for (var q = 0; q < RIB_N - 1; q++) { var a = q * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("aFade", new THREE.BufferAttribute(fad, 1));
+    geo.setIndex(idx);
+    var mesh = new THREE.Mesh(geo, new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+      uniforms: { uAll: { value: 1 } },
+      vertexShader: "attribute float aFade; varying float vF; void main(){ vF=aFade; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+      fragmentShader: "uniform float uAll; varying float vF; void main(){ vec3 c = mix(vec3(1.0,0.42,0.22), vec3(1.0,0.96,0.9), vF); gl_FragColor = vec4(c, vF * uAll * 0.9); }",
+    }));
+    mesh.frustumCulled = false;
+    mesh.visible = false;
+    scene.add(mesh);
+    ribbons.push({ mesh: mesh, pos: pos, fad: fad, samples: [], state: 0, fadeT: 0 });
+  }
+})();
+// the blade itself, visible while a swing is live
+var bladeCore = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1, 0.09), new THREE.MeshBasicMaterial({ color: 0xfff6e8, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+bladeCore.visible = false;
+scene.add(bladeCore);
+var bladeGlow = new THREE.Mesh(new THREE.BoxGeometry(0.26, 1, 0.26), new THREE.MeshBasicMaterial({ color: EMBER, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false }));
+bladeGlow.visible = false;
+scene.add(bladeGlow);
+function bladeDir(m, th, out) {
+  out.copy(m.f).multiplyScalar(m.fb)
+    .addScaledVector(m.A, Math.cos(th))
+    .addScaledVector(m.B, Math.sin(th) * m.bs)
+    .addScaledVector(UP, m.dn || 0);
+  return out.normalize();
+}
+function ribRoot(m, out) {
+  out.copy(S.p).addScaledVector(m.f, (m.push || 0) * 0.9);
+  out.y += 0.3;
+  return out;
+}
+function pushRibbonSample(rib, root, dir, len) {
+  if (rib.samples.length >= RIB_N) rib.samples.shift();
+  rib.samples.push({
+    rx: root.x + dir.x * 1.2, ry: root.y + dir.y * 1.2, rz: root.z + dir.z * 1.2,
+    tx: root.x + dir.x * len, ty: root.y + dir.y * len, tz: root.z + dir.z * len,
+    t: S.t,
+  });
+}
+
+// dart aim lines (assigned per-frame to telegraphing darts)
+var aimLines = [];
+(function () {
+  for (var i = 0; i < 6; i++) {
+    var lm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1, 0.07), new THREE.MeshBasicMaterial({ color: REDC, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    lm.visible = false;
+    scene.add(lm);
+    aimLines.push(lm);
+  }
+})();
+
+// zenith bombardment marks: ground ring + filling disc + warning column
+var bombVis = [];
+(function () {
+  for (var i = 0; i < 6; i++) {
+    var ring = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 32), new THREE.MeshBasicMaterial({ color: REDC, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+    var disc = new THREE.Mesh(new THREE.CircleGeometry(1, 24), new THREE.MeshBasicMaterial({ color: REDC, transparent: true, opacity: 0, depthWrite: false }));
+    var col = new THREE.Mesh(new THREE.BoxGeometry(0.5, 26, 0.5), new THREE.MeshBasicMaterial({ color: REDC, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    ring.rotation.x = -Math.PI / 2; disc.rotation.x = -Math.PI / 2;
+    ring.visible = disc.visible = col.visible = false;
+    scene.add(ring); scene.add(disc); scene.add(col);
+    bombVis.push({ ring: ring, disc: disc, col: col });
+  }
+})();
+
+// sentinel slam shockwave visuals
+var slamVis = [];
+(function () {
+  for (var i = 0; i < 4; i++) {
+    var sm = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 40), new THREE.MeshBasicMaterial({ color: REDC, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    sm.rotation.x = -Math.PI / 2;
+    sm.visible = false;
+    scene.add(sm);
+    slamVis.push(sm);
+  }
+})();
+
+// weaver bolts (instanced) + their ground shadows
+var MAXB = 24;
+var boltMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.34, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff4a3c, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.95, depthWrite: false }), MAXB);
+boltMesh.frustumCulled = false;
+scene.add(boltMesh);
+var boltShadow = new THREE.InstancedMesh(new THREE.CircleGeometry(0.5, 12), makeShadowMat(0.3), MAXB);
+boltShadow.frustumCulled = false;
+scene.add(boltShadow);
+for (var zb = 0; zb < MAXB; zb++) { boltMesh.setMatrixAt(zb, dummy.matrix); boltShadow.setMatrixAt(zb, dummy.matrix); }
+boltMesh.instanceMatrix.needsUpdate = true; boltShadow.instanceMatrix.needsUpdate = true;
+
+// ============================================================================
+// ==================== TESSERON — FOURTH OF THE CHOIR ========================
+// ============================================================================
+// INTEGRATION NOTES (for Opus): copy this block + the "tesseron" ETYPES/EGEOS/
+// TYPEKEYS/cnt entries + the tesseron AI branch + the bossStep/bossFrame hooks
+// + the #bossWrap/#titleCard HTML/CSS. Call summonTesseron() from startBossFight().
+
+// ---- the grand arena ring (static in this trial; the main game builds it in the summon) ----
+var arenaPillars = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6), new THREE.MeshBasicMaterial({ color: 0x0a0e1c }), 10);
+(function () {
+  var tmpO = new THREE.Object3D();
+  for (var i = 0; i < 10; i++) {
+    var ang = (i / 10) * 6.283;
+    var px = Math.cos(ang) * 34, pz = Math.sin(ang) * 34;
+    pillars.push({ x: px, z: pz, r: 1.6, top: GROUND_Y + 18 });
+    tmpO.position.set(px, GROUND_Y + 9, pz);
+    tmpO.scale.set(1.6, 18, 1.6);
+    tmpO.rotation.set(0, ang, 0);
+    tmpO.updateMatrix();
+    arenaPillars.setMatrixAt(i, tmpO.matrix);
+  }
+  arenaPillars.instanceMatrix.needsUpdate = true;
+  scene.add(arenaPillars);
+})();
+var arenaRing = new THREE.Mesh(new THREE.RingGeometry(0.985, 1, 72), new THREE.MeshBasicMaterial({ color: EMBER, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide }));
+arenaRing.rotation.x = -Math.PI / 2;
+arenaRing.position.y = GROUND_Y + 0.1;
+arenaRing.scale.setScalar(30);
+scene.add(arenaRing);
+
+// ---- SILHOUETTE RENDER: the body is one uniform unlit color (no shading,
+// no visible faces — depth information erased), so the eye receives only the
+// 2D projected outline, which morphs as the shape turns. The outline itself is
+// an inverted hull: a slightly larger back-face shell, visible only as a thin
+// shimmering rim hugging the silhouette. A cube becomes a living 2D shape.
+var silDark = new THREE.MeshBasicMaterial({ color: 0x03050c });
+function hullMat() {
+  return new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+}
+var CHALK_C = new THREE.Color(0xa9c4cf), RED_C = new THREE.Color(0xff4438), EMBER_C = new THREE.Color(0xffa06a), GOLD_C = new THREE.Color(0xf5c97a), SEED_RED = new THREE.Color(0xff5a4a), TMPC = new THREE.Color();
+function makeSilInstanced(size, count, hullScale) {
+  var hs = hullScale || 1.09;
+  var body = new THREE.InstancedMesh(new THREE.BoxGeometry(size, size, size), silDark, count);
+  var hull = new THREE.InstancedMesh(new THREE.BoxGeometry(size * hs, size * hs, size * hs), hullMat(), count);
+  body.frustumCulled = hull.frustumCulled = false;
+  scene.add(body); scene.add(hull);
+  for (var i = 0; i < count; i++) hull.setColorAt(i, CHALK_C);
+  return { body: body, hull: hull, n: count };
+}
+function silWrite(P, i, x, y, z, rx, ry, rz, sc, col) {
+  dummyB.position.set(x, y, z);
+  dummyB.rotation.set(rx, ry, rz);
+  dummyB.scale.setScalar(sc);
+  dummyB.updateMatrix();
+  P.body.setMatrixAt(i, dummyB.matrix);
+  P.hull.setMatrixAt(i, dummyB.matrix);
+  P.hull.setColorAt(i, col);
+}
+function silFlush(P) {
+  P.body.instanceMatrix.needsUpdate = true;
+  P.hull.instanceMatrix.needsUpdate = true;
+  if (P.hull.instanceColor) P.hull.instanceColor.needsUpdate = true;
+}
+var dummyB = new THREE.Object3D();
+// ownership rendered as ENERGY STREAMS: beads of command flowing boss -> cube
+var STREAM_N = 8, BEADS_PER = 6, BEAD_N = STREAM_N * BEADS_PER;
+var beadMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.17, 0),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }), BEAD_N);
+beadMesh.frustumCulled = false;
+scene.add(beadMesh);
+var BEAD_C = new THREE.Color(0xff9a3d);
+function streamTo(idx, ax, ay, az, bx, by, bz, hot, now) {
+  // beads march from the boss's heart out to the controlled cube
+  for (var bi3 = 0; bi3 < BEADS_PER; bi3++) {
+    var gi = idx * BEADS_PER + bi3;
+    var fr = ((bi3 / BEADS_PER) + now * 0.00055 + idx * 0.13) % 1;
+    var ease = fr * fr * (3 - 2 * fr);
+    dummyB.position.set(ax + (bx - ax) * ease, ay + (by - ay) * ease + Math.sin(now * 0.004 + gi) * 0.12, az + (bz - az) * ease);
+    dummyB.rotation.set(now * 0.003 + gi, now * 0.002, 0);
+    dummyB.scale.setScalar((0.5 + fr * 0.9) * (hot ? 1.25 : 1));
+    dummyB.updateMatrix();
+    beadMesh.setMatrixAt(gi, dummyB.matrix);
+    TMPC.copy(BEAD_C);
+    if (hot) TMPC.lerp(RED_C, 0.6);
+    TMPC.multiplyScalar(0.6 + 0.55 * fr);
+    beadMesh.setColorAt(gi, TMPC);
+  }
+}
+function hideStream(idx) {
+  for (var bi4 = 0; bi4 < BEADS_PER; bi4++) {
+    var gi2 = idx * BEADS_PER + bi4;
+    dummyB.position.set(0, -999, 0); dummyB.scale.setScalar(0); dummyB.updateMatrix();
+    beadMesh.setMatrixAt(gi2, dummyB.matrix);
+  }
+}
+// the floor answers when material is being called
+var callRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48),
+  new THREE.MeshBasicMaterial({ color: EMBER, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+callRing.rotation.x = -Math.PI / 2;
+scene.add(callRing);
+// mesh-pair variant for the angel's unique parts
+var HULL_PARTS = [];
+function makeSilPair(geo, parent, px, py, pz, baseCol, hullScale) {
+  var body = new THREE.Mesh(geo, silDark);
+  var hm = hullMat();
+  var hull = new THREE.Mesh(geo, hm);
+  hull.scale.setScalar(hullScale || 1.09);
+  body.position.set(px, py, pz);
+  hull.position.set(px, py, pz);
+  parent.add(body); parent.add(hull);
+  HULL_PARTS.push({ mat: hm, base: baseCol, ph: Math.random() * 6.28 });
+  return { body: body, hull: hull };
+}
+
+// ---- the angel: a BALL OF CUBES for a body, floating head, halo, great feathered wings ----
+var angel = new THREE.Group();
+angel.visible = false;
+scene.add(angel);
+// the body cluster: 18 silhouette cubes packed into a slowly-turning ball
+var CORE_N = 26;
+var COREX = makeSilInstanced(1.3, CORE_N, 1.10);
+var COREOFF = [];
+(function () {
+  // inner packing + an even fibonacci shell: reads as a true sphere of cubes
+  for (var i = 0; i < 6; i++) {
+    var u0 = 1 - 2 * (i + 0.5) / 6, r0 = Math.sqrt(1 - u0 * u0), p0 = i * 2.399963;
+    COREOFF.push({ x: Math.cos(p0) * r0 * 1.05, y: u0 * 1.05, z: Math.sin(p0) * r0 * 1.05, rp: Math.random() * 6.28, rs: 0.2 + Math.random() * 0.4, sc: 1.05 });
+  }
+  for (var j = 0; j < 20; j++) {
+    var u1 = 1 - 2 * (j + 0.5) / 20, r1 = Math.sqrt(1 - u1 * u1), p1 = j * 2.399963;
+    COREOFF.push({ x: Math.cos(p1) * r1 * 2.35, y: u1 * 2.35, z: Math.sin(p1) * r1 * 2.35, rp: Math.random() * 6.28, rs: 0.2 + Math.random() * 0.4, sc: 0.88 + Math.random() * 0.14 });
+  }
+})();
+var aHead = makeSilPair(new THREE.BoxGeometry(1.55, 1.55, 1.55), angel, 0, 4.9, 0, RED_C, 1.075);
+// the Foundation Seed: the true heart, revealed through the aperture, gold when it can bleed
+var aSeed = makeSilPair(new THREE.OctahedronGeometry(1.05, 0), angel, 0, 1.6, 0, SEED_RED, 1.12);
+var haloGroup = new THREE.Group();
+haloGroup.position.set(0, 5.0, -0.9);
+angel.add(haloGroup);
+var HALO_SEGS = [];
+(function () {
+  for (var i = 0; i < 8; i++) {
+    var seg = makeSilPair(new THREE.TorusGeometry(2.5, 0.1, 6, 7, 0.62), haloGroup, 0, 0, 0, EMBER_C, 1.06);
+    seg.body.rotation.z = i * 0.7854;
+    seg.hull.rotation.z = i * 0.7854;
+    HALO_SEGS.push({ b: seg.body, h: seg.hull, i: i, broken: false });
+  }
+})();
+// ---- skeletal wings: shoulder -> elbow -> wrist -> hand, articulated
+// two-segment feathers in three real layers. Every joint pivots at its root.
+function makeTaperedFeatherGeo(len, rootW, tipW, rootD, tipD) {
+  var x0 = rootW * 0.5, x1 = tipW * 0.5;
+  var z0 = rootD * 0.5, z1 = tipD * 0.5;
+  var pArr = new Float32Array([
+    -x0, 0, -z0, x0, 0, -z0, x0, 0, z0, -x0, 0, z0,
+    -x1, len, -z1, x1, len, -z1, x1, len, z1, -x1, len, z1
+  ]);
+  var idx = [
+    0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6,
+    0, 4, 5, 0, 5, 1, 1, 5, 6, 1, 6, 2,
+    2, 6, 7, 2, 7, 3, 3, 7, 4, 3, 4, 0
+  ];
+  var g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pArr, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+function makeWingBone(parent, len, thick, depth, color) {
+  var g = new THREE.BoxGeometry(len, thick, depth);
+  g.translate(len * 0.5, 0, 0);
+  return makeSilPair(g, parent, 0, 0, 0, color || CHALK_C, 1.045);
+}
+function makeWingPlate(parent, x, y, z, sx, sy, sz, rz) {
+  var g = new THREE.BoxGeometry(sx, sy, sz);
+  var pair = makeSilPair(g, parent, x, y, z, CHALK_C, 1.055);
+  pair.body.rotation.z = rz || 0;
+  pair.hull.rotation.copy(pair.body.rotation);
+  return pair;
+}
+function makeSgnBone(parent, len, thick, depth, sgn) {
+  var g = new THREE.BoxGeometry(len, thick, depth);
+  g.translate(sgn * len * 0.5, 0, 0);
+  return makeSilPair(g, parent, 0, 0, 0, CHALK_C, 1.045);
+}
+function makeHangFeather(rig, parent, spec) {
+  // a flat blade hanging from the bone: its ONLY motions are planar swings
+  // (rotation about Z) and a planar tip curl — it rides its joint for free
+  var rootG = new THREE.Group();
+  rootG.position.set(rig.side * spec.x, 0, spec.z || -0.1);
+  rootG.rotation.z = spec.baseZ;
+  parent.add(rootG);
+  var baseLen = spec.len * 0.58;
+  var tipLen = spec.len - baseLen;
+  var basePair = makeSilPair(
+    makeTaperedFeatherGeo(baseLen, spec.width, spec.width * 0.8, 0.15, 0.13),
+    rootG, 0, 0, 0, CHALK_C, 1.03);
+  var tip = new THREE.Group();
+  tip.position.y = baseLen;
+  tip.rotation.z = rig.side * -0.13;
+  rootG.add(tip);
+  var tipPair = makeSilPair(
+    makeTaperedFeatherGeo(tipLen, spec.width * 0.84, Math.max(0.12, spec.width * 0.2), 0.13, 0.06),
+    tip, 0, 0, 0, CHALK_C, 1.028);
+  var F = {
+    rig: rig, row: spec.row, slot: spec.slot, u: spec.u,
+    rootG: rootG, tip: tip, basePair: basePair, tipPair: tipPair,
+    baseZ: spec.baseZ, tipBase: tip.rotation.z,
+  };
+  rig.feathers.push(F);
+  FEATHERS.push(F);
+  return F;
+}
+function buildTesseronWing(sgn) {
+  // the arch: shoulder rises ~55deg, elbow bends the crest back down,
+  // wrist finishes it just below horizontal. Feathers hang from the bones.
+  var rig = {
+    side: sgn,
+    root: new THREE.Group(), shoulder: new THREE.Group(),
+    elbow: new THREE.Group(), wrist: new THREE.Group(),
+    feathers: [],
+    E1: 0.95, E2: -0.75, E3: -0.35, // base joint bends (arch shape)
+  };
+  rig.root.position.set(sgn * 1.9, 3.6, -0.7);
+  angel.add(rig.root);
+  rig.root.add(rig.shoulder);
+  makeWingPlate(rig.shoulder, sgn * 0.1, 0.1, 0, 1.6, 1.5, 1.1, sgn * -0.06);
+  makeSgnBone(rig.shoulder, 4.2, 0.5, 0.75, sgn);
+  rig.elbow.position.set(sgn * 4.05, 0, 0);
+  rig.shoulder.add(rig.elbow);
+  makeWingPlate(rig.elbow, 0, 0, 0, 1.25, 1.1, 0.9, sgn * 0.1);
+  makeSgnBone(rig.elbow, 4.6, 0.42, 0.68, sgn);
+  rig.wrist.position.set(sgn * 4.45, 0, 0);
+  rig.elbow.add(rig.wrist);
+  makeWingPlate(rig.wrist, 0, 0, 0, 1.0, 0.9, 0.72, sgn * -0.08);
+  makeSgnBone(rig.wrist, 2.4, 0.32, 0.55, sgn);
+  // hang angle w: from near-straight-down (inner) swinging outward (outer).
+  // local angle = sgn*(PI + w - E) so the WORLD cascade is smooth across joints.
+  function hangZ(w, E) { return sgn * (Math.PI + w - E); }
+  // inner secondaries on the upper arm
+  var shX = [0.9, 1.9, 2.9, 3.7];
+  for (var a2 = 0; a2 < 4; a2++) {
+    makeHangFeather(rig, rig.shoulder, {
+      row: "secondary", slot: a2, u: 0.05 + a2 * 0.05,
+      x: shX[a2], baseZ: hangZ(0.10 + a2 * 0.06, rig.E1),
+      len: 5.6 + a2 * 0.4, width: 1.45,
+      z: -0.1 - (a2 % 2) * 0.012,
+    });
+  }
+  // mid secondaries on the forearm
+  for (var b2 = 0; b2 < 6; b2++) {
+    makeHangFeather(rig, rig.elbow, {
+      row: "secondary", slot: 4 + b2, u: 0.26 + b2 * 0.055,
+      x: 0.6 + b2 * 0.7, baseZ: hangZ(0.30 + b2 * 0.064, rig.E1 + rig.E2),
+      len: 7.2 + b2 * 0.36, width: 1.5 - b2 * 0.04,
+      z: -0.1 - (b2 % 2) * 0.012,
+    });
+  }
+  // primaries at the wrist and hand: the longest of the cascade, convex arc
+  var pLen = [9.6, 10.6, 11.5, 12.2, 12.6, 12.4, 11.7, 10.6];
+  for (var c2 = 0; c2 < 8; c2++) {
+    makeHangFeather(rig, rig.wrist, {
+      row: "primary", slot: c2, u: 0.62 + c2 * 0.054,
+      x: 0.3 + c2 * 0.28, baseZ: hangZ(0.55 + c2 * 0.0715, rig.E1 + rig.E2 + rig.E3),
+      len: pLen[c2], width: 1.35 - c2 * 0.05,
+      z: -0.1 - (c2 % 2) * 0.012,
+    });
+  }
+  // coverts: short overlays in front, covering the hang roots along the arch
+  var covSpec = [
+    [rig.shoulder, 1.4, 0.14, rig.E1, 2.9],
+    [rig.elbow, 1.2, 0.36, rig.E1 + rig.E2, 3.5],
+    [rig.elbow, 2.6, 0.5, rig.E1 + rig.E2, 3.9],
+    [rig.wrist, 0.7, 0.66, rig.E1 + rig.E2 + rig.E3, 4.6],
+    [rig.wrist, 1.6, 0.82, rig.E1 + rig.E2 + rig.E3, 5.0],
+  ];
+  for (var d2 = 0; d2 < 5; d2++) {
+    var cs = covSpec[d2];
+    makeHangFeather(rig, cs[0], {
+      row: "covert", slot: d2, u: 0.1 + d2 * 0.2,
+      x: cs[1], baseZ: hangZ(cs[2], cs[3]),
+      len: cs[4], width: 1.2,
+      z: 0.19,
+    });
+  }
+  return rig;
+}
+var FEATHERS = [];
+var WING_RIG_L = buildTesseronWing(-1);
+var WING_RIG_R = buildTesseronWing(1);
+var wingL = WING_RIG_L.root;
+var wingR = WING_RIG_R.root;
+
+// ---- two circular rings of cubes surrounding the angel (and phase-2 armor) ----
+var RING_N = 24;
+var RGX = makeSilInstanced(1.15, RING_N, 1.10);
+var RING = [];
+for (var rg = 0; rg < RING_N; rg++) RING.push({ on: true, ring: rg < 10 ? 0 : 1, k: rg < 10 ? rg : rg - 10 });
+
+// ---- sermon cubes: the attack pool, pure 2D-reading silhouettes ----
+var SC_N = 56;
+var SCX = makeSilInstanced(2.2, SC_N, 1.10);
+// the aura shell: a large soft additive ghost around every attack cube
+var scAura = new THREE.InstancedMesh(new THREE.BoxGeometry(2.2 * 1.42, 2.2 * 1.42, 2.2 * 1.42),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.14, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide }), SC_N);
+scAura.frustumCulled = false;
+scene.add(scAura);
+for (var au0 = 0; au0 < SC_N; au0++) scAura.setColorAt(au0, CHALK_C);
+var SC = [];
+for (var sc0 = 0; sc0 < SC_N; sc0++) SC.push({ st: 0, mode: "", t: 0, x: 0, y: 0, z: 0, tx: 0, ty: 0, tz: 0, ox: 0, oy: 0, oz: 0, vx: 0, vy: 0, vz: 0, rx: 0, ry: 0, rz: 0, tel: 0, sc: 1, bp: 0, bx: 0, by: 0, bz: 0, delayL: 0 });
+function scFree() { for (var i = 0; i < SC_N; i++) if (SC[i].st === 0) return SC[i]; return null; }
+
+// ---- fill-circles: the mark that charges at your feet, then the cube smashes it ----
+var FILLS = [];
+(function () {
+  for (var i = 0; i < 16; i++) {
+    var ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 32), new THREE.MeshBasicMaterial({ color: REDC, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+    var disc = new THREE.Mesh(new THREE.CircleGeometry(1, 28), new THREE.MeshBasicMaterial({ color: REDC, transparent: true, opacity: 0, depthWrite: false }));
+    ring.rotation.x = -Math.PI / 2; disc.rotation.x = -Math.PI / 2;
+    ring.visible = disc.visible = false;
+    scene.add(ring); scene.add(disc);
+    FILLS.push({ ring: ring, disc: disc, on: false, t: 0, dur: 1, x: 0, z: 0, r: 2.3, kind: "" });
+  }
+})();
+function fillAt(x, z, dur, radius) {
+  for (var i = 0; i < FILLS.length; i++) {
+    var F = FILLS[i];
+    if (F.on) continue;
+    F.on = true; F.t = 0; F.dur = dur; F.x = x; F.z = z; F.r = radius || 2.3;
+    F.ring.visible = F.disc.visible = true;
+    F.ring.position.set(x, GROUND_Y + 0.12, z);
+    F.disc.position.set(x, GROUND_Y + 0.1, z);
+    F.ring.scale.setScalar(F.r);
+    F.disc.scale.setScalar(0.01);
+    return F;
+  }
+  return null;
+}
+function groundPull(mode, x, z, hoverY, delay) {
+  var c = scFree();
+  if (!c) return null;
+  c.st = 1; c.mode = mode; c.t = -(delay || 0);
+  c.x = x; c.z = z; c.y = GROUND_Y + 1.15;
+  c.ox = x; c.oy = hoverY; c.oz = z;
+  c.rx = 0; c.ry = Math.random() * 3.14; c.rz = 0;
+  c.tel = 0.5; c.sc = 1;
+  c.bp = Math.random() * 6.28;
+  holeAt(x, z);
+  return c;
+}
+function smashCube(x, z, radius) {
+  var c = scFree();
+  if (c) {
+    c.st = 1; c.mode = "smash"; c.t = 0;
+    c.x = x; c.z = z; c.y = GROUND_Y + 17;
+    c.ry = Math.random() * 3.14; c.tel = 1; c.sc = 1;
+  }
+}
+function cubeImpact(x, z, radius, big) {
+  var di = Math.hypot(S.p.x - x, S.p.z - z);
+  var altI = S.p.y - GROUND_Y;
+  if (di < radius && altI < 3.2 && altI > -0.4) vulnHit();
+  V3e.set(x, GROUND_Y + 0.15, z);
+  ringAt(V3e, big ? 0.6 : 0.4, REDC, big ? 14 : 6, true);
+  V3e.set(x, GROUND_Y + 2, z);
+  burstShards(V3e, big ? 26 : 8, big ? 20 : 14, 0.35, null, big ? 1.2 : 0.9);
+  holeAt(x, z);
+  sfx.boomS();
+  if (di < (big ? 22 : 13)) S.shake = Math.max(S.shake, big ? 0.4 : 0.13);
+}
+
+// floor holes
+var HOLES = [];
+(function () {
+  for (var i = 0; i < 24; i++) {
+    var hM = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.3), new THREE.MeshBasicMaterial({ color: 0x000208, transparent: true, opacity: 0, depthWrite: false }));
+    hM.rotation.x = -Math.PI / 2;
+    hM.visible = false;
+    scene.add(hM);
+    HOLES.push({ m: hM, t: 99 });
+  }
+})();
+function holeAt(x, z) {
+  for (var i = 0; i < HOLES.length; i++) {
+    if (HOLES[i].t >= 18) { HOLES[i].t = 0; HOLES[i].m.visible = true; HOLES[i].m.position.set(x, GROUND_Y + 0.07, z); return; }
+  }
+}
+
+// ---- phase 3: the Unfolding — a cube-net cross of silhouette panels ----
+var crossGroup = new THREE.Group();
+(function () {
+  var cells = [[0, 0], [0, 4.6], [0, -4.6], [-4.6, 0], [4.6, 0], [9.2, 0]];
+  for (var i = 0; i < cells.length; i++) {
+    makeSilPair(new THREE.BoxGeometry(4.5, 4.5, 0.18), crossGroup, cells[i][0], cells[i][1], 0, i === 0 ? RED_C : CHALK_C, 1.015);
+  }
+})();
+crossGroup.visible = false;
+scene.add(crossGroup);
+
+// ---- choreography runtime: poses are SAMPLED from real attack state,
+// then approached — the wings never run a fake parallel timeline.
+function wingSat(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+function wingSmooth(x) { x = wingSat(x); return x * x * (3 - 2 * x); }
+function wingPulse(t, a, b, c) {
+  if (t <= a || t >= c) return 0;
+  return t < b ? wingSmooth((t - a) / Math.max(0.0001, b - a))
+    : 1 - wingSmooth((t - b) / Math.max(0.0001, c - b));
+}
+function wingApproach(v, target, speed, dt) {
+  return v + (target - v) * (1 - Math.exp(-speed * dt));
+}
+var WING_NUM_KEYS = [
+  "lift", "back", "rootPitch", "rootYaw", "rootRoll",
+  "shoulderX", "shoulderY", "shoulderZ",
+  "elbowX", "elbowY", "elbowZ",
+  "wristX", "wristY", "wristZ",
+  "handX", "handY", "handZ",
+  "primaryFan", "secondaryFan", "covertFan",
+  "fold", "cup", "curl", "rake"
+];
+function newWingPose() {
+  var p = {};
+  for (var i = 0; i < WING_NUM_KEYS.length; i++) p[WING_NUM_KEYS[i]] = 0;
+  p.pointSlot = -1; p.pointAmount = 0;
+  p.beatSlot = -1; p.beatAmount = 0;
+  p.recoilSlot = -1; p.recoilAmount = 0;
+  return p;
+}
+function clearWingPose(p) {
+  for (var i = 0; i < WING_NUM_KEYS.length; i++) p[WING_NUM_KEYS[i]] = 0;
+  p.pointSlot = p.beatSlot = p.recoilSlot = -1;
+  p.pointAmount = p.beatAmount = p.recoilAmount = 0;
+}
+function copyWingPose(dst, src, dt) {
+  for (var i = 0; i < WING_NUM_KEYS.length; i++) {
+    var k = WING_NUM_KEYS[i];
+    dst[k] = wingApproach(dst[k], src[k], 12, dt);
+  }
+  dst.pointSlot = src.pointSlot;
+  dst.beatSlot = src.beatSlot;
+  dst.recoilSlot = src.recoilSlot;
+  dst.pointAmount = wingApproach(dst.pointAmount, src.pointAmount, 10, dt);
+  dst.beatAmount = wingApproach(dst.beatAmount, src.beatAmount, 12, dt);
+  dst.recoilAmount = wingApproach(dst.recoilAmount, src.recoilAmount, 12, dt);
+}
+function newAngelAttackPose() {
+  return {
+    L: newWingPose(), R: newWingPose(),
+    bodyPitch: 0, bodyRoll: 0, bodyYaw: 0, bodyLift: 0,
+    headPitch: 0, headYaw: 0, headRoll: 0,
+    haloPitch: 0, haloYaw: 0, haloLift: 0, haloBack: 0,
+    haloScale: 1, haloSpin: 0.5,
+  };
+}
+var ANGEL_POSE_TARGET = newAngelAttackPose();
+var ANGEL_POSE_CURRENT = newAngelAttackPose();
+WING_RIG_L.pose = ANGEL_POSE_CURRENT.L;
+WING_RIG_R.pose = ANGEL_POSE_CURRENT.R;
+function clearAngelPose(P) {
+  clearWingPose(P.L); clearWingPose(P.R);
+  P.bodyPitch = P.bodyRoll = P.bodyYaw = P.bodyLift = 0;
+  P.headPitch = P.headYaw = P.headRoll = 0;
+  P.haloPitch = P.haloYaw = P.haloLift = P.haloBack = 0;
+  P.haloScale = 1; P.haloSpin = 0.5;
+}
+function approachAngelPose(dst, src, dt) {
+  copyWingPose(dst.L, src.L, dt); copyWingPose(dst.R, src.R, dt);
+  var keys = ["bodyPitch", "bodyRoll", "bodyYaw", "bodyLift", "headPitch", "headYaw", "headRoll",
+    "haloPitch", "haloYaw", "haloLift", "haloBack", "haloScale", "haloSpin"];
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    dst[k] = wingApproach(dst[k], src[k], k === "haloSpin" ? 6 : 11, dt);
+  }
+}
+function setIdleWingPose(p, now, phase) {
+  p.shoulderZ = 0.18; p.elbowZ = -0.22; p.wristZ = -0.16; p.handZ = -0.08;
+  p.primaryFan = 0.12; p.secondaryFan = 0.08; p.covertFan = 0.04;
+  p.curl = 0.10;
+  p.rake = Math.sin(now * 0.0013) * 0.035;
+  p.rootRoll = Math.sin(now * 0.0011) * 0.025;
+  p.lift = Math.sin(now * 0.0013) * 0.08;
+  if (phase >= 2) { p.fold += 0.08; p.cup += 0.05; }
+}
+function setPrayerPose(P, amount) {
+  P.L.rootYaw += 0.26 * amount; P.R.rootYaw -= 0.26 * amount;
+  P.L.shoulderX += 0.48 * amount; P.R.shoulderX += 0.48 * amount;
+  P.L.shoulderZ += 0.44 * amount; P.R.shoulderZ += 0.44 * amount;
+  P.L.elbowZ += 0.66 * amount; P.R.elbowZ += 0.66 * amount;
+  P.L.wristZ += 0.54 * amount; P.R.wristZ += 0.54 * amount;
+  P.L.fold += 0.86 * amount; P.R.fold += 0.86 * amount;
+  P.L.cup += 0.72 * amount; P.R.cup += 0.72 * amount;
+  P.L.primaryFan -= 0.22 * amount; P.R.primaryFan -= 0.22 * amount;
+}
+function setCanopyPose(P, amount) {
+  P.L.lift += 0.65 * amount; P.R.lift += 0.65 * amount;
+  P.L.shoulderZ += 0.92 * amount; P.R.shoulderZ += 0.92 * amount;
+  P.L.elbowZ += 0.58 * amount; P.R.elbowZ += 0.58 * amount;
+  P.L.wristZ += 0.40 * amount; P.R.wristZ += 0.40 * amount;
+  P.L.shoulderX -= 0.35 * amount; P.R.shoulderX -= 0.35 * amount;
+  P.L.primaryFan += 0.54 * amount; P.R.primaryFan += 0.54 * amount;
+  P.L.secondaryFan += 0.36 * amount; P.R.secondaryFan += 0.36 * amount;
+  P.L.cup += 0.42 * amount; P.R.cup += 0.42 * amount;
+  P.L.curl += 0.25 * amount; P.R.curl += 0.25 * amount;
+}
+function setRadialPose(P, amount) {
+  P.L.shoulderZ += 0.54 * amount; P.R.shoulderZ += 0.54 * amount;
+  P.L.elbowZ -= 0.32 * amount; P.R.elbowZ -= 0.32 * amount;
+  P.L.wristZ -= 0.42 * amount; P.R.wristZ -= 0.42 * amount;
+  P.L.primaryFan += 0.92 * amount; P.R.primaryFan += 0.92 * amount;
+  P.L.secondaryFan += 0.72 * amount; P.R.secondaryFan += 0.72 * amount;
+  P.L.covertFan += 0.42 * amount; P.R.covertFan += 0.42 * amount;
+  P.L.rake -= 0.16 * amount; P.R.rake -= 0.16 * amount;
+}
+function setCocoonPose(P, amount) {
+  P.L.rootYaw += 0.54 * amount; P.R.rootYaw -= 0.54 * amount;
+  P.L.shoulderX += 0.76 * amount; P.R.shoulderX += 0.76 * amount;
+  P.L.shoulderZ += 0.72 * amount; P.R.shoulderZ += 0.72 * amount;
+  P.L.elbowZ += 1.02 * amount; P.R.elbowZ += 1.02 * amount;
+  P.L.wristZ += 0.86 * amount; P.R.wristZ += 0.86 * amount;
+  P.L.fold += 1.0 * amount; P.R.fold += 1.0 * amount;
+  P.L.cup += 1.0 * amount; P.R.cup += 1.0 * amount;
+  P.L.primaryFan -= 0.42 * amount; P.R.primaryFan -= 0.42 * amount;
+  P.L.curl += 0.55 * amount; P.R.curl += 0.55 * amount;
+}
+function setRaisePose(P, a) {
+  // both wings sweep upward together, as one gesture
+  P.L.shoulderZ += 0.85 * a; P.R.shoulderZ += 0.85 * a;
+  P.L.elbowZ += 0.35 * a; P.R.elbowZ += 0.35 * a;
+  P.L.wristZ += 0.2 * a; P.R.wristZ += 0.2 * a;
+  P.L.lift += 0.5 * a; P.R.lift += 0.5 * a;
+  P.L.primaryFan += 0.3 * a; P.R.primaryFan += 0.3 * a;
+  P.L.secondaryFan += 0.2 * a; P.R.secondaryFan += 0.2 * a;
+  P.L.cup += 0.25 * a; P.R.cup += 0.25 * a;
+}
+function setPointPose(P, a) {
+  // both wings arc forward toward the player: a natural curve, graded
+  // through the joints — shoulder sweeps most, wrist least
+  P.L.shoulderY -= 0.55 * a; P.R.shoulderY -= 0.55 * a;
+  P.L.elbowY -= 0.4 * a; P.R.elbowY -= 0.4 * a;
+  P.L.wristY -= 0.3 * a; P.R.wristY -= 0.3 * a;
+  P.L.shoulderZ -= 0.1 * a; P.R.shoulderZ -= 0.1 * a;
+  P.L.elbowZ += 0.15 * a; P.R.elbowZ += 0.15 * a;
+  P.L.primaryFan -= 0.35 * a; P.R.primaryFan -= 0.35 * a;
+  P.L.cup += 0.3 * a; P.R.cup += 0.3 * a;
+  P.L.curl += 0.2 * a; P.R.curl += 0.2 * a;
+}
+function setCrushPose(P, a) {
+  // wings clasp together above the head
+  P.L.shoulderZ += 1.15 * a; P.R.shoulderZ += 1.15 * a;
+  P.L.elbowZ += 0.75 * a; P.R.elbowZ += 0.75 * a;
+  P.L.wristZ += 0.45 * a; P.R.wristZ += 0.45 * a;
+  P.L.lift += 0.9 * a; P.R.lift += 0.9 * a;
+  P.L.shoulderY += 0.15 * a; P.R.shoulderY += 0.15 * a;
+  P.L.fold += 0.25 * a; P.R.fold += 0.25 * a;
+  P.L.cup += 0.9 * a; P.R.cup += 0.9 * a;
+  P.L.curl += 0.5 * a; P.R.curl += 0.5 * a;
+  P.L.primaryFan -= 0.25 * a; P.R.primaryFan -= 0.25 * a;
+}
+function setConductorPose(P, a) {
+  // the commanding stance: shoulders level and straight out to the sides,
+  // forearms and hands bent forward toward the player — a captain giving orders
+  P.L.shoulderZ -= 1.4 * a; P.R.shoulderZ -= 1.4 * a;   // flatten the arch
+  P.L.elbowZ += 1.25 * a; P.R.elbowZ += 1.25 * a;        // level the forearm
+  P.L.wristZ += 0.45 * a; P.R.wristZ += 0.45 * a;
+  P.L.shoulderY -= 0.06 * a; P.R.shoulderY -= 0.06 * a;  // shoulder stays straight
+  P.L.elbowY -= 1.0 * a; P.R.elbowY -= 1.0 * a;          // forearm bends forward
+  P.L.wristY -= 0.55 * a; P.R.wristY -= 0.55 * a;        // hand presents at you
+  P.L.primaryFan += 0.15 * a; P.R.primaryFan += 0.15 * a;
+  P.L.cup += 0.2 * a; P.R.cup += 0.2 * a;
+  P.L.curl += 0.15 * a; P.R.curl += 0.15 * a;
+}
+function conductorFlick(P, t, depth) {
+  // the ictus: one crisp downbeat of both hands on each command
+  var f = wingPulse(t, 0, 0.12, 0.5) * (depth || 1);
+  P.L.wristY -= 0.4 * f; P.R.wristY -= 0.4 * f;
+  P.L.elbowY -= 0.15 * f; P.R.elbowY -= 0.15 * f;
+  P.L.curl += 0.2 * f; P.R.curl += 0.2 * f;
+  P.headPitch += 0.12 * f;
+  return f;
+}
+function newBossChoreo() {
+  return {
+    state: "descend", stateT: 0,
+    sermonBeat: 0, sermonBeatT: 99, sermonSide: 1,
+    rainBeat: 0, rainBeatT: 99,
+    flingFire: -1, flingFireT: 99,
+    waveReleaseT: 99, wallT: 99,
+    slamBodyT: 99, slamHaloT: 99,
+  };
+}
+function bossWingCue(name, index) {
+  if (!BOSS || !BOSS.choreo) return;
+  var C = BOSS.choreo;
+  if (name === "sermon") {
+    C.sermonBeat = index;
+    C.sermonSide = (index & 1) ? -1 : 1;
+    C.sermonBeatT = 0;
+  } else if (name === "rain") {
+    C.rainBeat = index; C.rainBeatT = 0;
+  } else if (name === "fling") {
+    C.flingFire = index; C.flingFireT = 0;
+  } else if (name === "wave") C.waveReleaseT = 0;
+  else if (name === "wall") C.wallT = 0;
+  else if (name === "slamBody") C.slamBodyT = 0;
+  else if (name === "slamHalo") C.slamHaloT = 0;
+}
+function bossChoreoStep(h) {
+  var C = BOSS.choreo;
+  if (C.state !== BOSS.st) { C.state = BOSS.st; C.stateT = 0; }
+  else C.stateT += h;
+  C.sermonBeatT += h; C.rainBeatT += h; C.flingFireT += h;
+  C.waveReleaseT += h; C.slamBodyT += h; C.slamHaloT += h;
+}
+function findFlingCharge(out) {
+  out.index = 0; out.charge = 0;
+  var best = 999;
+  for (var i = 0; i < SC_N; i++) {
+    var c = SC[i];
+    if (c.st === 2 && c.mode === "bolt") {
+      var remain = c.delayL - c.t;
+      if (remain >= 0 && remain < best) {
+        best = remain;
+        out.index = c.attackSlot || 0;
+        out.charge = 1 - wingSat(remain / 0.34);
+      }
+    }
+  }
+  return out;
+}
+var FLING_VIS = { index: 0, charge: 0 };
+function sampleSermonPose(B, P) {
+  var sm = B.serm;
+  if (!sm) return;
+  if (sm.stage === 0) {
+    // locked shots: the conductor marks each strike with one crisp downbeat
+    setConductorPose(P, 1);
+    P.bodyLift += 0.35;
+    P.haloPitch += 0.6; P.haloSpin = 0.35;
+    conductorFlick(P, B.choreo.sermonBeatT, 1);
+  } else if (sm.stage === 1) {
+    // THE LIFT: forearms and hands rise, palms up — the shoulders never move
+    var raise = wingSmooth(sm.bobT / 0.9);
+    setConductorPose(P, 0.75);
+    P.L.elbowZ += 0.9 * raise; P.R.elbowZ += 0.9 * raise;
+    P.L.wristZ += 0.55 * raise; P.R.wristZ += 0.55 * raise;
+    P.L.lift += 0.4 * raise; P.R.lift += 0.4 * raise;
+    P.bodyLift += 0.5 * raise;
+    P.haloLift += 2.2 * raise; P.haloScale = 1 + 0.25 * raise;
+    P.haloSpin = 0.3 + 1.1 * raise;
+  } else if (sm.stage === 2) {
+    // the sustained order: hands pressed forward while the rain falls
+    setConductorPose(P, 1);
+    P.L.wristY -= 0.18; P.R.wristY -= 0.18;
+    P.bodyPitch += 0.05;
+    P.haloPitch += 0.8; P.haloSpin = 1.2;
+    var rp = wingPulse(B.choreo.rainBeatT, 0, 0.08, 0.3);
+    P.L.wristZ -= 0.06 * rp; P.R.wristZ -= 0.06 * rp;
+  } else if (sm.stage === 3 && B.ball) {
+    var t = B.ball.t;
+    if (B.ball.st === 0) {
+      if (t < 1.0) {
+        // STEP ONE: the conductor calls the material upward
+        var g1 = wingSmooth(t / 0.9);
+        setConductorPose(P, 0.6);
+        P.L.elbowZ += 1.0 * g1; P.R.elbowZ += 1.0 * g1;
+        P.L.wristZ += 0.6 * g1; P.R.wristZ += 0.6 * g1;
+        P.bodyLift += 0.6 * g1;
+        P.haloLift += 2.2 * g1; P.haloSpin = 1.2;
+      } else {
+        // STEP TWO: the crush above its head
+        var g2 = wingSmooth((t - 1.0) / 0.5);
+        setConductorPose(P, 0.6 * (1 - g2));
+        setCrushPose(P, g2);
+        P.bodyLift += 0.6;
+        P.haloLift += 2.2 + 1.4 * g2; P.haloScale = 1.25 - 0.35 * g2;
+        P.haloSpin = 1.2 + 1.4 * g2;
+        var crunch = wingPulse(t - 1.35, 0, 0.09, 0.4);
+        P.L.cup += 0.5 * crunch; P.R.cup += 0.5 * crunch;
+        P.bodyLift -= 0.3 * crunch;
+      }
+    } else {
+      // STEP THREE: from the crush, both tips whip forward — the order to kill
+      var thr = wingSmooth(Math.min(1, (t - 1.85) / 0.3));
+      setCrushPose(P, 1 - thr);
+      setConductorPose(P, thr);
+      P.bodyPitch += 0.12 * thr;
+      P.haloPitch += 1.2 * thr; P.haloSpin = 2.0;
+      var whip = wingPulse(t - 1.85, 0, 0.1, 0.5);
+      P.L.elbowY -= 0.5 * whip; P.R.elbowY -= 0.5 * whip;
+      P.L.wristY -= 0.35 * whip; P.R.wristY -= 0.35 * whip;
+      P.L.recoilSlot = 4; P.L.recoilAmount = whip;
+      P.R.recoilSlot = 4; P.R.recoilAmount = whip;
+    }
+  }
+}
+function sampleFlingPose(B, P) {
+  // the conductor holds both hands on you; tension gathers in the wrists
+  findFlingCharge(FLING_VIS);
+  var charge = FLING_VIS.charge;
+  setConductorPose(P, 1);
+  P.haloPitch += 0.7; P.haloSpin = 1.0;
+  P.L.wristY -= 0.3 * charge; P.R.wristY -= 0.3 * charge;
+  P.L.cup += 0.3 * charge; P.R.cup += 0.3 * charge;
+  P.headPitch += 0.07 * charge;
+  // each launch is one downbeat, then the hands settle back
+  var f = conductorFlick(P, B.choreo.flingFireT, 0.9);
+  P.bodyPitch -= 0.04 * f;
+}
+function sampleWavePose(B, P) {
+  var W = B.wave;
+  if (!W) return;
+  var open = W.stage === 0 ? wingSmooth(W.t / 1.05) : 1;
+  // the low command: conductor stance with the hands pressed down-forward
+  setConductorPose(P, 0.85 * open);
+  P.L.elbowZ -= 0.9 * open; P.R.elbowZ -= 0.9 * open;
+  P.L.wristZ -= 0.5 * open; P.R.wristZ -= 0.5 * open;
+  P.bodyLift -= 0.9 * open;
+  P.bodyPitch += 0.08 * open;
+  P.haloLift -= 4.0 * open;
+  P.haloBack += 0.9 * open;
+  P.haloPitch += 1.45 * open;
+  P.haloScale = 1 + 0.55 * open;
+  P.haloSpin = W.stage === 0 ? 0.2 : 1.2;
+  // the release: both hands sweep up-and-forward, casting the ring outward
+  var release = wingPulse(B.choreo.waveReleaseT, 0, 0.09, 0.4);
+  P.L.elbowZ += 1.1 * release; P.R.elbowZ += 1.1 * release;
+  P.L.wristY -= 0.35 * release; P.R.wristY -= 0.35 * release;
+  P.L.primaryFan += 0.3 * release; P.R.primaryFan += 0.3 * release;
+  P.bodyPitch -= 0.14 * release;
+}
+function sampleSlamPose(B, P) {
+  var SLM = B.slam;
+  if (!SLM) return;
+  var compress = SLM.stage === 0 ? wingSmooth(SLM.t / 0.48) : 1;
+  var recover = SLM.stage === 3 ? wingSmooth(SLM.t / 0.72) : 0;
+  setCocoonPose(P, compress * (1 - recover));
+  P.bodyPitch += 0.22 * compress * (1 - recover);
+  P.bodyLift -= 0.35 * compress;
+  P.haloScale = 1 + 0.22 * compress;
+  P.haloSpin = 0.08 + compress * 1.8;
+  if (SLM.stage <= 1) {
+    P.haloLift += 4.2 * compress;
+  } else if (SLM.stage === 2) {
+    // the halo physically FALLS to deliver the second impact
+    var fall = wingSmooth(SLM.t / 0.35);
+    P.haloLift += 4.2 - 14.0 * fall * fall;
+    P.haloPitch += 0.4 * fall;
+  } else {
+    P.haloLift += -9.8 + 14.0 * recover;
+  }
+  var bodyHit = wingPulse(B.choreo.slamBodyT, 0, 0.055, 0.28);
+  P.L.elbowZ += 0.52 * bodyHit; P.R.elbowZ += 0.52 * bodyHit;
+  P.L.wristZ += 0.68 * bodyHit; P.R.wristZ += 0.68 * bodyHit;
+  P.bodyPitch += 0.16 * bodyHit;
+  var haloHit = wingPulse(B.choreo.slamHaloT, 0, 0.055, 0.32);
+  P.L.shoulderZ -= 0.82 * haloHit; P.R.shoulderZ -= 0.82 * haloHit;
+  P.L.elbowZ -= 0.88 * haloHit; P.R.elbowZ -= 0.88 * haloHit;
+  P.L.wristZ -= 0.72 * haloHit; P.R.wristZ -= 0.72 * haloHit;
+  P.L.primaryFan += 0.48 * haloHit; P.R.primaryFan += 0.48 * haloHit;
+}
+function sampleAngelAttackPose(B, now) {
+  var P = ANGEL_POSE_TARGET;
+  clearAngelPose(P);
+  setIdleWingPose(P.L, now, B.phase);
+  setIdleWingPose(P.R, now + 900, B.phase);
+  if (B.st === "sermon") sampleSermonPose(B, P);
+  else if (B.st === "fling") sampleFlingPose(B, P);
+  else if (B.st === "wave") sampleWavePose(B, P);
+  else if (B.st === "slam") sampleSlamPose(B, P);
+  else if (B.st === "shed") { setRadialPose(P, 0.7); P.L.lift += 0.4; P.R.lift += 0.4; P.haloSpin = 2.2; }
+  else if (B.st === "walls") {
+    // the captain's order: hands gather each wall up, then CAST it forward
+    setConductorPose(P, 0.9);
+    var gather = wingPulse(B.choreo.wallT, 0, 0.3, 0.7);
+    P.L.elbowZ += 0.8 * gather; P.R.elbowZ += 0.8 * gather;
+    P.L.wristZ += 0.5 * gather; P.R.wristZ += 0.5 * gather;
+    var cast = wingPulse(B.choreo.wallT, 0.55, 0.8, 1.4);
+    P.L.elbowY -= 0.55 * cast; P.R.elbowY -= 0.55 * cast;
+    P.L.wristY -= 0.5 * cast; P.R.wristY -= 0.5 * cast;
+    P.L.curl += 0.25 * cast; P.R.curl += 0.25 * cast;
+    P.bodyPitch += 0.06 * cast;
+    P.haloPitch += 0.7; P.haloSpin = 1.4;
+  }
+  else if (B.st === "death") setCocoonPose(P, -0.45);
+  return P;
+}
+function applyWingRig(rig, p, dt, now, damage) {
+  var sgn = rig.side;
+  rig.root.position.set(sgn * 1.9, 3.6 + p.lift * 0.5, -0.7 + p.back);
+  rig.root.rotation.z = sgn * -p.rootRoll * 0.5;
+  var breathe = Math.sin(now * 0.0013) * 0.05;
+  // the arch, posed: raises lift it, folds collapse it, always as one curve
+  rig.shoulder.rotation.z = sgn * (rig.E1 + breathe + p.shoulderZ * 0.55 - p.fold * 0.5);
+  rig.elbow.rotation.z = sgn * (rig.E2 + p.elbowZ * 0.5 - p.fold * 0.35);
+  rig.wrist.rotation.z = sgn * (rig.E3 + p.wristZ * 0.5 - p.fold * 0.25);
+  // per-joint forward bend: negative Y keys bend that joint toward the player,
+  // so the shoulder can stay straight while the forearm and hand present forward
+  rig.shoulder.rotation.y = sgn * (0.16 + p.shoulderY * 0.6);
+  rig.elbow.rotation.y = sgn * (0.12 + p.elbowY * 0.75);
+  rig.wrist.rotation.y = sgn * (0.06 + p.wristY * 0.8);
+  for (var i = 0; i < rig.feathers.length; i++) {
+    var F = rig.feathers[i];
+    var rowFan = F.row === "primary" ? p.primaryFan :
+      F.row === "secondary" ? p.secondaryFan : p.covertFan;
+    // one slow coherent wave traveling along the whole cascade
+    var wave = Math.sin(now * 0.001 + F.u * 4.2) * (0.018 + damage * 0.022);
+    // fan keys swing the hang outward; folds gather it inward toward the body
+    var swing = rowFan * (0.12 + F.u * 0.3) - p.fold * (0.1 + F.u * 0.35)
+      + p.cup * 0.12 * F.u + p.rake * (F.u - 0.5) * 0.25 + wave;
+    if (F.row === "primary" && F.slot === p.pointSlot) swing += 0.35 * p.pointAmount;
+    if (F.row === "primary" && F.slot === p.beatSlot) swing += 0.22 * p.beatAmount;
+    if (F.row === "primary" && F.slot === p.recoilSlot) swing -= 0.25 * p.recoilAmount;
+    F.rootG.rotation.z = F.baseZ + sgn * swing;
+    F.tip.rotation.z = F.tipBase + sgn * -(p.curl + p.cup * 0.4) * 0.35;
+    var lost = BOSS.e.hp <= 30 && F.row === "primary" && F.slot === 3;
+    F.basePair.body.visible = F.basePair.hull.visible = !lost;
+    F.tipPair.body.visible = F.tipPair.hull.visible = !lost;
+  }
+}
+
+// ---- boss state ----
+var BOSS = null;
+var bossWrap = document.getElementById("bossWrap"),
+    bossFill = document.getElementById("bossBarFill"),
+    bossStateEl = document.getElementById("bossState"),
+    titleCard = document.getElementById("titleCard");
+
+function summonTesseron() {
+  for (var i = 0; i < SC_N; i++) SC[i].st = 0;
+  for (var j = 0; j < HOLES.length; j++) { HOLES[j].t = 99; HOLES[j].m.visible = false; }
+  for (var k = 0; k < FILLS.length; k++) { FILLS[k].on = false; FILLS[k].cube = null; FILLS[k].ring.visible = FILLS[k].disc.visible = false; }
+  for (var r = 0; r < RING_N; r++) { RING[r].on = true; RING[r].flash = 0; RING[r].tel = 0; }
+  crossGroup.visible = false;
+  angel.visible = true;
+  var cfg = ETYPES.tesseron;
+  var pos = new THREE.Vector3(0, 60, 0);
+  var e = {
+    type: "tesseron", cfg: cfg, p: pos, prev: pos.clone(), v: new THREE.Vector3(),
+    ph: 0, born: S.t, dead: false, hp: cfg.hp, stun: 0, stag: 0, flash: 0, tel: 0,
+    sqT: 0, sqAx: new THREE.Vector3(0, 1, 0), state: "", st: 0, cd: 0,
+    facing: 0, launched: false, aim: new THREE.Vector3(), pd: false,
+  };
+  S.enemies.push(e);
+  BOSS = {
+    e: e, phase: 1, st: "descend", t: 0, vuln: false, lastHp: cfg.hp,
+    armor: false, rearmed: false, waitT: 0, sub: 0,
+    hover: new THREE.Vector3(0, GROUND_Y + 15, 0),
+    serm: null, ball: null,
+    choreo: newBossChoreo(), wave: null, slam: null, walls: null, over: null, renderYaw: 0, deadT: 0,
+  };
+  bossWrap.style.display = "block";
+  bossStateEl.textContent = "";
+  blip(160, 40, 3.2, "sine", 0.18);
+}
+
+function bossHoverH(B) {
+  // every state owns its altitude: judging from high, leaning in low,
+  // sinking within reach when exposed
+  switch (B.st) {
+    case "sermon":
+      if (!B.serm) return 15;
+      if (B.serm.stage === 0) return 17.5;
+      if (B.serm.stage === 1) return 18;
+      if (B.serm.stage === 2) return 12.5;
+      if (B.serm.stage === 3) return B.ball && B.ball.st === 1 ? 13 : 18;
+      return 15;
+    case "fling": return 10;
+    case "wave": return 8.5;
+    case "walls": return 14 - 2 * wingPulse(B.choreo.wallT, 0, 0.3, 0.8);
+    case "exposed": case "exposed3": return 9;
+    case "vest": case "shed": return 16.5;
+    default: return 15;
+  }
+}
+function bossSetState(st, keepVuln) {
+  BOSS.st = st; BOSS.t = 0; BOSS.sub = 0;
+  if (BOSS.choreo) { BOSS.choreo.state = st; BOSS.choreo.stateT = 0; }
+  if (!keepVuln) BOSS.vuln = BOSS.phase === 1;
+}
+function bossFacePlayer(out) {
+  out.set(S.p.x - BOSS.e.p.x, 0, S.p.z - BOSS.e.p.z);
+  if (out.lengthSq() < 0.01) out.set(0, 0, 1);
+  return out.normalize();
+}
+function ringArmorCount() {
+  var n = 0;
+  for (var i = 0; i < RING_N; i++) if (RING[i].on) n++;
+  return n;
+}
+function ringPlatePos(i, out) {
+  // one source of truth for plate positions (render and gameplay agree)
+  var R2 = RING[i];
+  var inner = R2.ring === 0;
+  var aAng = performance.now() * 0.001 * (inner ? 1.1 : -0.85) + R2.k * (inner ? 0.6283 : 0.4488);
+  var aR = (inner ? 7.8 : 10.8) * (BOSS && BOSS.armor ? 0.62 : 1);
+  var T0 = 0.42, T1 = 0.3;
+  if (inner) out.set(Math.cos(aAng) * aR, Math.sin(aAng) * aR * Math.sin(T0), Math.sin(aAng) * aR * Math.cos(T0));
+  else out.set(Math.cos(aAng) * aR * Math.cos(T1), -Math.cos(aAng) * aR * Math.sin(T1), Math.sin(aAng) * aR);
+  out.x += BOSS.e.p.x; out.y += BOSS.e.p.y + 1.6; out.z += BOSS.e.p.z;
+  out.userAng = aAng;
+  return out;
+}
+function bossBlockedHit(dir) {
+  // blocked hits ring off the geometry: no damage, no kill, no heat, no hitstop reward
+  if (BOSS.armor && ringArmorCount() > 0) { popArmorAt(S.p, dir); return; }
+  sfx.clank();
+  BOSS.e.flash = Math.max(BOSS.e.flash, 0.25);
+  V3e.copy(S.p).lerp(BOSS.e.p, 0.55);
+  burstShards(V3e, 4, 10, 0.15, null, 0.6);
+}
+function popArmorAt(origin, dir) {
+  // the plate you actually struck: smallest perpendicular distance to the attack ray
+  var dx = BOSS.e.p.x - origin.x, dy = BOSS.e.p.y - origin.y, dz = BOSS.e.p.z - origin.z;
+  var dl = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+  var rxr = dx / dl, ryr = dy / dl, rzr = dz / dl;
+  if (dir && dir.lengthSq && dir.lengthSq() > 0.01) { rxr = dir.x; ryr = dir.y; rzr = dir.z; var nl = Math.sqrt(rxr*rxr+ryr*ryr+rzr*rzr)||1; rxr/=nl; ryr/=nl; rzr/=nl; }
+  var bi = -1, bd = 1e9;
+  for (var i = 0; i < RING_N; i++) {
+    if (!RING[i].on) continue;
+    ringPlatePos(i, V3d);
+    var px = V3d.x - origin.x, py = V3d.y - origin.y, pz = V3d.z - origin.z;
+    var t = px * rxr + py * ryr + pz * rzr;
+    if (t < 0) continue;
+    var qx = px - rxr * t, qy = py - ryr * t, qz = pz - rzr * t;
+    var d = qx * qx + qy * qy + qz * qz;
+    if (d < bd) { bd = d; bi = i; }
+  }
+  if (bi < 0) { // struck from a blind angle: nearest plate to the attacker
+    for (var j = 0; j < RING_N; j++) {
+      if (!RING[j].on) continue;
+      ringPlatePos(j, V3d);
+      var d2 = V3d.distanceToSquared(origin);
+      if (d2 < bd) { bd = d2; bi = j; }
+    }
+  }
+  if (bi < 0) return;
+  RING[bi].on = false;
+  ringPlatePos(bi, V3e);
+  burstShards(V3e, 12, 16, 0.4, null, 0.8); // the shatter happens where the plate was
+  ringAt(V3e, 0.25, 0xf5c97a, 4);
+  sfx.clank();
+  S.shake = Math.max(S.shake, 0.12);
+  if (ringArmorCount() === 0) {
+    BOSS.armor = false;
+    BOSS.vuln = true;
+    bossSetState("exposed", true);
+    BOSS.e.flash = 1;
+    blip(392, 784, 0.4, "sine", 0.14);
+    popAt(BOSS.e.p, "EXPOSED", GOLD, true);
+  }
+}
+function rebuildRings(n) {
+  for (var i = 0; i < RING_N; i++) RING[i].on = i < n;
+}
+
+// ---- attacks ----
+// THE SERMON: locked shots at your feet -> a downpour -> the gathered ball
+function atkSermon() {
+  BOSS.serm = { stage: 0, shotN: 0, shotsMax: BOSS.phase >= 2 ? 4 : 3, nextT: 0.2,
+    harvestN: BOSS.phase >= 2 ? 30 : 24, bobT: 0, armT: 0, armed: 0, humT: 0, useBall: BOSS.phase >= 2 };
+  bossSetState("sermon", BOSS.phase !== 1 ? true : false);
+}
+function atkFling() { bossSetState("fling", BOSS.phase !== 1); }
+function chooseWaveGaps() {
+  var gaps = [];
+  while (gaps.length < 3) {
+    var g = Math.floor(Math.random() * 14);
+    var okay = true;
+    for (var i = 0; i < gaps.length; i++) {
+      var d = Math.abs(gaps[i] - g); d = Math.min(d, 14 - d);
+      if (d < 2) { okay = false; break; }
+    }
+    if (okay) gaps.push(g);
+  }
+  return gaps;
+}
+function createWavePreview(W) {
+  if (W.created) return;
+  W.created = true;
+  for (var i = 0; i < 14; i++) {
+    if (W.gaps.indexOf(i) >= 0) continue;
+    var c = scFree(); if (!c) break;
+    var ang = (i / 14) * 6.28318530718;
+    c.st = 1; c.mode = "wave"; c.t = 0; c.tel = 0.9;
+    c.x = BOSS.e.p.x + Math.cos(ang) * 5;
+    c.z = BOSS.e.p.z + Math.sin(ang) * 5;
+    c.y = GROUND_Y + 1.15;
+    c.vx = Math.cos(ang); c.vz = Math.sin(ang);
+    c.ry = ang; c.rx = 0; c.sc = 1;
+    c.hold = true;
+  }
+}
+function releaseWavePreview() {
+  for (var i = 0; i < SC_N; i++) {
+    var c = SC[i];
+    if (c.st !== 0 && c.mode === "wave") {
+      c.hold = false; c.t = 0; c.tel = 1;
+    }
+  }
+  bossWingCue("wave", 0);
+  sfx.boomS();
+  S.shake = Math.max(S.shake, 0.22);
+}
+function atkWave() {
+  BOSS.wave = { stage: 0, t: 0, created: false, gaps: chooseWaveGaps() };
+  bossSetState("wave", BOSS.phase !== 1);
+}
+function spawnVolley(count) {
+  var B = BOSS, e = B.e;
+  var aB = Math.atan2(e.p.z - S.p.z, e.p.x - S.p.x);
+  for (var fl = 0; fl < count; fl++) {
+    var fa = aB + (Math.random() - 0.5) * 2.6;
+    var fr = 11 + Math.random() * 2.5;
+    var cF = groundPull("bolt", S.p.x + Math.cos(fa) * fr, S.p.z + Math.sin(fa) * fr, GROUND_Y + 6.5 + Math.random() * 2, fl * 0.12);
+    if (cF) { cF.delayL = 0.5 + fl * 0.27; cF.sc = 0.85; cF.attackSlot = fl; }
+  }
+}
+function startOverlay(kind, count, cadence) {
+  BOSS.over = { kind: kind, n: count, cad: cadence, t: 0, fired: 0 };
+}
+function updateOverlay(h) {
+  var O = BOSS.over;
+  if (!O) return;
+  O.t += h;
+  if (O.fired < O.n && O.t >= O.fired * O.cad + 0.4) {
+    O.fired++;
+    if (O.kind === "shots") {
+      fillAt(S.p.x, S.p.z, 0.8, 2.4);
+      bossWingCue("sermon", O.fired);
+      blip(340, 620, 0.4, "sine", 0.05);
+    } else if (O.kind === "volley") {
+      spawnVolley(2);
+    }
+  }
+  if (O.fired >= O.n && O.t > O.n * O.cad + 1.2) BOSS.over = null;
+}
+function atkWalls() {
+  BOSS.walls = { count: 3, spawned: 0, nextT: 0.5, chaosT: 1.1 };
+  bossSetState("walls", true);
+  BOSS.vuln = false;
+}
+function spawnWall(n) {
+  var B = BOSS;
+  // the wall forms on a line between the boss and you, then marches your way
+  bossFacePlayer(V3e);
+  var lat = V3c.set(-V3e.z, 0, V3e.x);
+  var cx = B.e.p.x + V3e.x * 9, cz = B.e.p.z + V3e.z * 9;
+  var doorway = Math.floor(Math.random() * 5); // one full column stays open
+  for (var col = 0; col < 5; col++) {
+    if (col === doorway) continue;
+    for (var row = 0; row < 3; row++) {
+      var c = scFree();
+      if (!c) return;
+      c.st = 1; c.mode = "wall"; c.t = -(col * 0.05 + row * 0.12);
+      c.x = cx + lat.x * (col - 2) * 2.45;
+      c.z = cz + lat.z * (col - 2) * 2.45;
+      c.y = GROUND_Y + 1.15;
+      c.oy = GROUND_Y + 1.15 + row * 2.4; // its row height
+      c.vx = V3e.x; c.vz = V3e.z;
+      c.ry = Math.atan2(V3e.x, V3e.z); c.rx = 0; c.sc = 1;
+      c.tel = 0.8; c.bp = Math.random() * 6.28;
+      if (row === 0) holeAt(c.x, c.z);
+    }
+  }
+  blip(64, 160, 0.9, "sawtooth", 0.12);
+  S.shake = Math.max(S.shake, 0.16);
+}
+function atkSlam() {
+  BOSS.slam = { stage: 0, t: 0, startY: BOSS.e.p.y, impactY: GROUND_Y + 5 };
+  bossSetState("slam", BOSS.phase !== 1);
+}
+
+function startBall() {
+  var B = BOSS;
+  B.ball = { st: 0, t: 0, cx: B.e.p.x, cy: B.e.p.y + 7.5, cz: B.e.p.z, vx: 0, vy: 0, vz: 0, compact: 1, crunched: false };
+  for (var i = 0; i < 18; i++) {
+    var a = Math.random() * 6.283, r = 10 + Math.random() * 18;
+    var c = groundPull("ball", Math.cos(a) * r, Math.sin(a) * r, GROUND_Y + 6, i * 0.05);
+    if (!c) break;
+    // an even fibonacci offset: it compacts into a sphere like his own body
+    var u = 1 - 2 * (i + 0.5) / 18, rr = Math.sqrt(1 - u * u), ph = i * 2.399963;
+    c.bx = rr * Math.cos(ph); c.by = u; c.bz = rr * Math.sin(ph);
+    c.tel = 1;
+  }
+  blip(90, 260, 1.1, "sawtooth", 0.12);
+}
+
+// ---- the boss brain ----
+function bossStep(h) {
+  var B = BOSS, e = B.e;
+  if (!B) return;
+  if (!e.dead && B.st !== "descend") {
+    if (B.phase === 1 && e.hp <= 40) {
+      B.phase = 2;
+      abortAttack(); // whatever it was doing dissolves cleanly, mid-flight or not
+      B.armor = true; rebuildRings(24); B.vuln = false;
+      bossSetState("vest", true);
+      popAt(e.p, "THE VESTMENT", GOLD, true);
+      blip(120, 60, 1.2, "sine", 0.2);
+    } else if (B.phase === 2 && e.hp <= 18) {
+      B.phase = 3;
+      abortAttack();
+      B.armor = false; B.vuln = false;
+      bossSetState("shed", true); // it strips its own vestment before unfolding
+      popAt(e.p, "THE UNFOLDING", GOLD, true);
+      blip(100, 44, 1.6, "sine", 0.22);
+    }
+  }
+  if (e.dead && B.st !== "death") {
+    bossSetState("death", true); S.pdT = 1.4; abortAttack();
+    burstShards(e.p, 60, 20, 0.5, null, 1.2);
+    ringAt(e.p, 0.9, EMBER, 14);
+    V3e.set(e.p.x, GROUND_Y + 0.15, e.p.z);
+    ringAt(V3e, 1.0, EMBER, 16, true);
+    beamAt(e.p.x, e.p.y + 8, e.p.z, EMBER);
+  }
+
+  B.t += h;
+  e.ph += h * 0.6;
+  bossChoreoStep(h);
+  if (B.st !== "descend" && B.st !== "death") updateOverlay(h);
+  if (B.st !== "descend") B.hover.y = GROUND_Y + bossHoverH(B);
+  if (B.st !== "death" && B.st !== "slam") e.p.lerp(B.hover, 1 - Math.exp(-4.5 * h));
+  e.prev.copy(e.p);
+  e.v.set(0, 0, 0);
+
+  switch (B.st) {
+    case "descend":
+      e.p.set(0, 60 + (GROUND_Y + 15 - 60) * easeOutCubic(Math.min(1, B.t / 3.5)), 0);
+      if (B.t >= 3.7) { bossSetState("idle"); B.waitT = 0.8; }
+      break;
+    case "idle":
+      B.waitT -= h;
+      if (B.waitT <= 0) {
+        var r1 = Math.random();
+        if (B.phase === 1) { if (r1 < 0.5) atkSermon(); else if (r1 < 0.78) atkFling(); else atkWave(); }
+        else if (B.phase === 2) {
+          // the second form issues two commands at once
+          if (r1 < 0.34) atkSermon();
+          else if (r1 < 0.54) { atkWave(); startOverlay("shots", 3, 0.9); }     // ring + tracked circles
+          else if (r1 < 0.74) { atkFling(); startOverlay("shots", 3, 1.0); }    // bolts + tracked circles
+          else if (r1 < 0.9) { atkSlam(); startOverlay("volley", 2, 0.85); }    // slam under bolt cover
+          else atkWave();
+        }
+        else atkWalls();
+      }
+      break;
+    case "sermon": {
+      var sm = B.serm;
+      if (sm.stage === 0) {
+        // locked shots at your feet: the circle fills, then the cube smashes it
+        sm.nextT -= h;
+        if (sm.nextT <= 0 && sm.shotN < sm.shotsMax) {
+          sm.shotN++;
+          sm.nextT = 0.95;
+          fillAt(S.p.x, S.p.z, 0.8, 2.4);
+          bossWingCue("sermon", sm.shotN - 1);
+          blip(340, 620, 0.4, "sine", 0.06);
+        }
+        if (sm.shotN >= sm.shotsMax && sm.nextT <= -0.4) {
+          // THE HARVEST: it tears cubes out of the floor across the whole field
+          sm.stage = 1;
+          var pulled = 0, tries = 0;
+          while (pulled < sm.harvestN && tries < 80) {
+            tries++;
+            var ha2 = Math.random() * 6.283, hr2 = 8 + Math.random() * 24;
+            var hx = Math.cos(ha2) * hr2, hz = Math.sin(ha2) * hr2;
+            if (Math.hypot(hx - S.p.x, hz - S.p.z) < 5) continue;
+            if (groundPull("rain2", hx, hz, GROUND_Y + 5.5 + Math.random() * 11.5, pulled * 0.045)) pulled++;
+          }
+          blip(70, 180, 1.4, "sawtooth", 0.1);
+          S.shake = Math.max(S.shake, 0.18);
+        }
+      } else if (sm.stage === 1) {
+        // the risen field hangs overhead, spread out and bobbing — the menace beat
+        sm.bobT += h;
+        sm.humT -= h;
+        if (sm.humT <= 0) { sm.humT = 0.75; blip(46, 40, 0.7, "sine", 0.06); blip(92, 88, 0.5, "sine", 0.03); }
+        if (sm.bobT > 1.6) { sm.stage = 2; sm.armT = 0; }
+      } else if (sm.stage === 2) {
+        // rainfall: hovering cubes are assigned circles in your area; a full circle dives its cube
+        sm.armT -= h;
+        if (sm.armT <= 0) {
+          sm.armT = 0.09;
+          for (var ai3 = 0; ai3 < SC_N; ai3++) {
+            var ch = SC[ai3];
+            if (ch.st === 2 && ch.mode === "rain2") {
+              var a4 = Math.random() * 6.283, r4 = Math.random() * 7;
+              var F5 = fillAt(sm.armed < 2 ? S.p.x : S.p.x + Math.cos(a4) * r4,
+                              sm.armed < 2 ? S.p.z : S.p.z + Math.sin(a4) * r4, 0.42, 2.2);
+              if (F5) { F5.cube = ch; ch.st = 3; ch.t = 0; sm.armed++; if (sm.armed % 3 === 1) bossWingCue("rain", sm.armed); }
+              break;
+            }
+          }
+        }
+        var busy = 0;
+        for (var bi2 = 0; bi2 < SC_N; bi2++) if (SC[bi2].st !== 0 && SC[bi2].mode === "rain2") busy++;
+        if (busy === 0 && sm.armed > 0) {
+          if (sm.useBall) { sm.stage = 3; startBall(); }
+          else { bossSetState("idle", B.phase !== 1); B.waitT = 0.95; }
+        }
+      } else if (sm.stage === 3) {
+        var bl = B.ball;
+        bl.t += h;
+        if (bl.st === 0) {
+          // gathered loose above him — then the CRUNCH: compacted into a tight sphere
+          if (bl.t > 1.0) bl.compact = Math.max(0.78, 1 - (bl.t - 1.0) / 0.35 * 0.22);
+          if (bl.t > 1.35 && !bl.crunched) {
+            bl.crunched = true;
+            blip(60, 30, 0.25, "sine", 0.24);
+            V3e.set(bl.cx, bl.cy, bl.cz);
+            burstShards(V3e, 14, 10, 0.5, null, 0.7);
+            S.shake = Math.max(S.shake, 0.15);
+          }
+          if (bl.t > 1.85) {
+            bl.st = 1;
+            var txp = S.p.x + S.vel.x * 0.55, tzp = S.p.z + S.vel.z * 0.55;
+            var dxb = txp - bl.cx, dyb = (GROUND_Y + 1.6) - bl.cy, dzb = tzp - bl.cz;
+            var lb = Math.sqrt(dxb * dxb + dyb * dyb + dzb * dzb) || 1;
+            bl.vx = dxb / lb * 42; bl.vy = dyb / lb * 42; bl.vz = dzb / lb * 42;
+            sfx.skewerS();
+          }
+        } else {
+          bl.cx += bl.vx * h; bl.cy += bl.vy * h; bl.cz += bl.vz * h;
+          var dpb = Math.hypot(S.p.x - bl.cx, S.p.z - bl.cz);
+          if (dpb < 4.2 && Math.abs(S.p.y - bl.cy) < 4.0) { detonateBall(); break; }
+          if (bl.cy <= GROUND_Y + 1.7 || Math.hypot(bl.cx, bl.cz) > ARENA_R) { detonateBall(); break; }
+        }
+      }
+      break;
+    }
+    case "fling": {
+      var maxF = B.phase >= 2 ? 7 : 5;
+      if (B.sub === 0) {
+        B.sub = 1;
+        var aB = Math.atan2(e.p.z - S.p.z, e.p.x - S.p.x);
+        for (var fl = 0; fl < maxF; fl++) {
+          var fa = aB + (fl / (maxF - 1) - 0.5) * 3.4;
+          var fr = 11 + Math.random() * 2.5;
+          var cF = groundPull("bolt", S.p.x + Math.cos(fa) * fr, S.p.z + Math.sin(fa) * fr, GROUND_Y + 6.5 + Math.random() * 2, fl * 0.14);
+          if (cF) { cF.delayL = 0.55 + fl * 0.34; cF.sc = 0.85; cF.attackSlot = fl; }
+        }
+        blip(500, 300, 0.2, "sine", 0.06);
+      }
+      if (B.t > 1.6 + maxF * 0.34 + 1.6) { bossSetState("idle", B.phase !== 1); B.waitT = 0.9; }
+      break;
+    }
+    case "wave": {
+      var W = B.wave;
+      W.t += h;
+      if (W.stage === 0) {
+        if (W.t >= 0.34) createWavePreview(W);
+        if (W.t >= 1.0) { W.stage = 1; W.t = 0; releaseWavePreview(); }
+      } else if (W.stage === 1) {
+        if (W.t >= 3.2) { W.stage = 2; W.t = 0; }
+      } else if (W.t >= 0.75) {
+        B.wave = null;
+        bossSetState("idle", B.phase !== 1);
+        B.waitT = 1.0;
+      }
+      break;
+    }
+    case "slam": {
+      var SL = B.slam;
+      SL.t += h;
+      if (SL.stage === 0) {
+        // cocoon compression: the wings own the anticipation
+        e.p.y = SL.startY;
+        if (SL.t >= 0.48) { SL.stage = 1; SL.t = 0; }
+      } else if (SL.stage === 1) {
+        // accelerating descent with a short hang at the top
+        var kd = wingSmooth(SL.t / 0.30);
+        e.p.y = SL.startY + (SL.impactY - SL.startY) * kd * kd;
+        if (SL.t >= 0.30) {
+          SL.stage = 2; SL.t = 0;
+          e.p.y = SL.impactY;
+          S.slams.push({ x: e.p.x, z: e.p.z, t: 0, pd: false });
+          bossWingCue("slamBody", 0);
+          sfx.boomS(); S.shake = Math.max(S.shake, 0.32);
+          V3e.set(e.p.x, GROUND_Y + 0.15, e.p.z);
+          ringAt(V3e, 0.35, REDC, 5, true);
+        }
+      } else if (SL.stage === 2) {
+        // the halo falls and delivers the second impact
+        e.p.y = SL.impactY;
+        if (SL.t >= 0.35) {
+          SL.stage = 3; SL.t = 0;
+          S.slams.push({ x: e.p.x, z: e.p.z, t: 0, pd: false });
+          bossWingCue("slamHalo", 0);
+          V3e.set(e.p.x, GROUND_Y + 0.15, e.p.z);
+          ringAt(V3e, 0.3, 0xf5c97a, 6, true);
+          blip(190, 74, 0.32, "triangle", 0.15);
+          S.shake = Math.max(S.shake, 0.22);
+        }
+      } else {
+        // the wings push the body back up to hover
+        var kr = wingSmooth(SL.t / 0.72);
+        e.p.y = SL.impactY + (B.hover.y - SL.impactY) * kr;
+        if (SL.t >= 0.82) {
+          e.p.y = B.hover.y;
+          B.slam = null;
+          bossSetState("idle", true);
+          B.waitT = 0.9;
+        }
+      }
+      break;
+    }
+    case "vest":
+      if (B.t > 1.4) { bossSetState("idle", true); B.waitT = 0.8; }
+      break;
+    case "shed": {
+      // the vestment strips itself, plate by plate, before the unfolding
+      var shedIdx = Math.floor(B.t / 0.09);
+      if (shedIdx > B.sub) {
+        B.sub = shedIdx;
+        for (var sh3 = 0; sh3 < RING_N; sh3++) {
+          if (RING[sh3].on) {
+            ringPlatePos(sh3, V3e);
+            RING[sh3].on = false;
+            burstShards(V3e, 6, 12, 0.5, null, 0.7);
+            blip(700 - B.sub * 18, 340, 0.06, "triangle", 0.05);
+            break;
+          }
+        }
+      }
+      if (B.t > 1.3) atkWalls();
+      break;
+    }
+    case "exposed":
+      if (B.t > 7 && !e.dead) {
+        if (!B.rearmed && e.hp > 26) { B.rearmed = true; B.armor = true; rebuildRings(16); B.vuln = false; bossSetState("idle", true); B.waitT = 0.8; popAt(e.p, "REARMORED", CHALK, false); }
+        else B.t = 0;
+      }
+      break;
+    case "walls": {
+      var WL = B.walls;
+      WL.nextT -= h;
+      // the final form spams: circles and bolts never stop between the walls
+      WL.chaosT -= h;
+      if (WL.chaosT <= 0) {
+        WL.chaosT = 1.7;
+        if (Math.random() < 0.55) { fillAt(S.p.x, S.p.z, 0.8, 2.4); bossWingCue("sermon", 0); }
+        else spawnVolley(2);
+      }
+      if (WL.spawned < WL.count && WL.nextT <= 0) {
+        spawnWall(WL.spawned);
+        WL.spawned++;
+        WL.nextT = 1.25;
+        bossWingCue("wall", WL.spawned);
+      }
+      if (WL.spawned >= WL.count) {
+        var alive = 0;
+        for (var wc = 0; wc < SC_N; wc++) if (SC[wc].st !== 0 && SC[wc].mode === "wall") alive++;
+        if (alive === 0 && B.t > 1.5) {
+          B.walls = null;
+          var ha = Math.random() * 6.283, hr = 8 + Math.random() * 12;
+          B.hover.set(Math.cos(ha) * hr, GROUND_Y + 15, Math.sin(ha) * hr);
+          bossSetState("exposed3", true);
+          B.vuln = true;
+          fillAt(S.p.x, S.p.z, 0.8, 2.4);
+        }
+      }
+      break;
+    }
+    case "exposed3":
+      if (B.t > 1.3 && B.sub === 0) { B.sub = 1; fillAt(S.p.x, S.p.z, 0.8, 2.4); }
+      if (B.t > 4.5) { atkWalls(); }
+      break;
+    case "death":
+      B.deadT += h;
+      break;
+  }
+
+  // ---- fill circles resolve into smashes ----
+  for (var fi = 0; fi < FILLS.length; fi++) {
+    var F2 = FILLS[fi];
+    if (!F2.on) continue;
+    F2.t += h;
+    if (F2.t >= F2.dur) {
+      F2.on = false;
+      F2.ring.visible = F2.disc.visible = false;
+      if (F2.cube && F2.cube.st === 3 && F2.cube.mode === "rain2") {
+        // its harvested cube dives from where it hovers
+        F2.cube.st = 4; F2.cube.t = 0;
+        F2.cube.ox = F2.cube.x; F2.cube.oy = F2.cube.y; F2.cube.oz = F2.cube.z;
+        F2.cube.tx = F2.x; F2.cube.tz = F2.z;
+        F2.cube = null;
+      } else {
+        F2.cube = null;
+        smashCube(F2.x, F2.z, F2.r);
+      }
+    }
+  }
+  // ---- sermon cube physics ----
+  for (var ci = 0; ci < SC_N; ci++) {
+    var c4 = SC[ci];
+    if (c4.st === 0) continue;
+    c4.t += h;
+    if (c4.st === 9) {
+      // dissolving: shrink and spin away over 0.3s
+      c4.sc = Math.max(0.01, c4.sc - h * 3.4);
+      c4.rx += 3 * h; c4.ry += 2 * h;
+      if (c4.t > 0.35) c4.st = 0;
+    } else if (c4.t < 0) {
+      // waiting its staggered turn
+    } else if (c4.mode === "smash") {
+      var kf = Math.min(1, c4.t / 0.13);
+      c4.y = (GROUND_Y + 17) + ((GROUND_Y + 1.15) - (GROUND_Y + 17)) * (kf * kf);
+      if (kf >= 1) { c4.st = 0; cubeImpact(c4.x, c4.z, 2.5, false); }
+    } else if (c4.mode === "rain2") {
+      if (c4.st === 1) {
+        // torn out of the floor, rising to its hover
+        var kr = Math.min(1, c4.t / 0.6);
+        c4.y = (GROUND_Y + 1.15) + (c4.oy - (GROUND_Y + 1.15)) * easeOutCubic(kr);
+        c4.ry += 0.8 * h;
+        c4.tel = 0.5 - kr * 0.2;
+        if (kr >= 1) { c4.st = 2; c4.t = 0; }
+      } else if (c4.st === 2 || c4.st === 3) {
+        // hanging overhead, spread out and bobbing
+        c4.y = c4.oy + Math.sin(S.t * 1.7 + c4.bp) * 0.55;
+        c4.x = c4.ox + Math.sin(S.t * 0.9 + c4.bp) * 0.4;
+        c4.z = c4.oz + Math.cos(S.t * 0.8 + c4.bp) * 0.4;
+        c4.ry += 0.5 * h;
+        c4.tel = c4.st === 3 ? 0.85 : 0.28;
+      } else if (c4.st === 4) {
+        // the dive onto its filled circle
+        var kd2 = Math.min(1, c4.t / 0.2);
+        c4.x = c4.ox + (c4.tx - c4.ox) * kd2;
+        c4.z = c4.oz + (c4.tz - c4.oz) * kd2;
+        c4.y = c4.oy + ((GROUND_Y + 1.15) - c4.oy) * (kd2 * kd2);
+        c4.rx += 6 * h;
+        if (kd2 >= 1) { c4.st = 0; cubeImpact(c4.tx, c4.tz, 2.4, false); }
+      }
+    } else if (c4.mode === "wave") {
+      if (c4.hold) {
+        // held preview: the gaps are readable before anything moves
+        c4.y = GROUND_Y + 1.15 + Math.sin(S.t * 3 + c4.ry) * 0.08;
+        c4.rx = 0;
+        c4.tel = 0.55 + Math.sin(S.t * 3 + c4.ry) * 0.1;
+      } else {
+        c4.x += c4.vx * 16 * h;
+        c4.z += c4.vz * 16 * h;
+        c4.rx -= 11 * h;
+        c4.tel = Math.max(0, c4.tel - h);
+        var dR = Math.hypot(S.p.x - c4.x, S.p.z - c4.z);
+        var altR2 = S.p.y - GROUND_Y;
+        if (dR < 2.1 && altR2 < 3.2 && altR2 > -0.4) vulnHit();
+        if (Math.hypot(c4.x, c4.z) > 56) { c4.st = 0; }
+      }
+    } else if (c4.mode === "wall") {
+      if (c4.st === 1) {
+        // torn from the floor, rising to its slot in the wall
+        var krw = Math.min(1, c4.t / 0.55);
+        c4.y = (GROUND_Y + 1.15) + (c4.oy - (GROUND_Y + 1.15)) * easeOutCubic(krw);
+        c4.tel = 0.8 - krw * 0.3;
+        if (krw >= 1) { c4.st = 2; c4.t = 0; }
+      } else {
+        // the wall marches: dash through the doorway, dive under, or lance over
+        c4.x += c4.vx * 14.5 * h;
+        c4.z += c4.vz * 14.5 * h;
+        c4.y = c4.oy + Math.sin(S.t * 2.5 + c4.bp) * 0.1;
+        c4.tel = 0.45 + Math.sin(S.t * 2.2 + c4.bp) * 0.09;
+        var dw = Math.sqrt((S.p.x - c4.x) * (S.p.x - c4.x) + (S.p.y - c4.y) * (S.p.y - c4.y) + (S.p.z - c4.z) * (S.p.z - c4.z));
+        if (dw < 1.95) vulnHit();
+        if (c4.t > 6.5 || Math.hypot(c4.x, c4.z) > ARENA_R - 2) { c4.st = 9; c4.t = 0; }
+      }
+    } else if (c4.mode === "bolt") {
+      if (c4.st === 1) {
+        var kr2 = Math.min(1, c4.t / 0.55);
+        c4.y = (GROUND_Y + 1.15) + (c4.oy - (GROUND_Y + 1.15)) * easeOutCubic(kr2);
+        c4.ry += 1.2 * h;
+        c4.tel = 0.6;
+        if (kr2 >= 1) { c4.st = 2; c4.t = 0; }
+      } else if (c4.st === 2) {
+        // hovering red beside your path, waiting its turn
+        c4.y = c4.oy + Math.sin(S.t * 2.2 + c4.bp) * 0.3;
+        c4.tel = 0.8;
+        if (c4.t >= c4.delayL) {
+          c4.st = 3; c4.t = 0;
+          bossWingCue("fling", c4.attackSlot || 0);
+          var dxq = S.p.x - c4.x, dyq = S.p.y - c4.y, dzq = S.p.z - c4.z;
+          var lq = Math.sqrt(dxq * dxq + dyq * dyq + dzq * dzq) || 1;
+          c4.vx = dxq / lq * 44; c4.vy = dyq / lq * 44; c4.vz = dzq / lq * 44;
+          sfx.boltFire();
+        }
+      } else if (c4.st === 3) {
+        c4.x += c4.vx * h; c4.y += c4.vy * h; c4.z += c4.vz * h;
+        c4.rx += 9 * h;
+        var dq = Math.sqrt((S.p.x - c4.x) * (S.p.x - c4.x) + (S.p.y - c4.y) * (S.p.y - c4.y) + (S.p.z - c4.z) * (S.p.z - c4.z));
+        if (dq < 1.9) {
+          c4.st = 0;
+          vulnHit();
+          V3e.set(c4.x, c4.y, c4.z);
+          burstShards(V3e, 6, 12, 0.7, null, 0.8);
+        }
+        if (c4.y < GROUND_Y + 1 || Math.hypot(c4.x, c4.z) > ARENA_R || c4.t > 3.5) {
+          c4.st = 0;
+          if (c4.y < GROUND_Y + 1.4) cubeImpact(c4.x, c4.z, 1.6, false);
+        }
+      }
+    } else if (c4.mode === "ball") {
+      var bl2 = B.ball;
+      if (!bl2) { c4.st = 0; continue; }
+      if (c4.st === 1) {
+
+        // torn from the floor
+        var kr3 = Math.min(1, c4.t / 0.6);
+        c4.y = (GROUND_Y + 1.15) + (c4.oy - (GROUND_Y + 1.15)) * easeOutCubic(kr3);
+        c4.ry += 1.4 * h;
+        if (kr3 >= 1) { c4.st = 2; c4.t = 0; }
+      } else {
+        // flying to (then riding) the cluster, which compacts around the center
+        var spin = S.t * (bl2.st === 1 ? 2.6 : 1.1);
+        var cr = 3.3 * bl2.compact;
+        var cox = (c4.bx * Math.cos(spin) - c4.bz * Math.sin(spin)) * cr;
+        var coz = (c4.bx * Math.sin(spin) + c4.bz * Math.cos(spin)) * cr;
+        var gx = bl2.cx + cox, gy = bl2.cy + c4.by * cr, gz = bl2.cz + coz;
+        if (bl2.st === 0 && c4.st === 2 && c4.t < 1.2) {
+          var kg = 1 - Math.exp(-6 * h);
+          c4.x += (gx - c4.x) * kg; c4.y += (gy - c4.y) * kg; c4.z += (gz - c4.z) * kg;
+        } else {
+          c4.x = gx; c4.y = gy; c4.z = gz;
+        }
+        c4.rx += 4 * h;
+      }
+    }
+  }
+  // holes fade
+  for (var hi = 0; hi < HOLES.length; hi++) {
+    if (HOLES[hi].t < 18) {
+      HOLES[hi].t += h;
+      HOLES[hi].m.material.opacity = HOLES[hi].t < 0.4 ? HOLES[hi].t * 2.1 : Math.max(0, 0.85 * (1 - HOLES[hi].t / 18));
+      if (HOLES[hi].t >= 18) HOLES[hi].m.visible = false;
+    }
+  }
+  // victory
+  if (B.st === "death" && B.deadT > 3.0 && !overShown) {
+    overShown = true;
+    S.mode = "over";
+    best = Math.max(best, S.score);
+    document.getElementById("finalScore").textContent = S.score;
+    var secsB = Math.floor(S.t % 60);
+    document.getElementById("finalStats").textContent = "the foundation resolves \u00B7 " + Math.floor(S.t / 60) + ":" + (secsB < 10 ? "0" : "") + secsB;
+    document.querySelector("#over .tag").textContent = "RESOLVED";
+    show(document.getElementById("over"));
+    bossWrap.style.display = "none";
+    if (document.exitPointerLock) document.exitPointerLock();
+  }
+}
+function detonateBall() {
+  var B = BOSS, bl = B.ball;
+  if (!bl) return;
+  cubeImpact(bl.cx, bl.cz, 8.5, true);
+  holeAt(bl.cx + 2, bl.cz - 1);
+  holeAt(bl.cx - 2, bl.cz + 2);
+  for (var i = 0; i < SC_N; i++) {
+    if (SC[i].st !== 0 && SC[i].mode === "ball") {
+      V3e.set(SC[i].x, SC[i].y, SC[i].z);
+      burstShards(V3e, 6, 22, 0.5, null, 1);
+      SC[i].st = 0;
+    }
+  }
+  B.ball = null;
+  bossSetState("idle", B.phase !== 1);
+  B.waitT = 1.0;
+}
+function abortAttack() {
+  // graceful teardown: nothing pops, nothing sticks — controlled material dissolves
+  for (var i = 0; i < SC_N; i++) {
+    if (SC[i].st !== 0 && SC[i].st !== 9) { SC[i].st = 9; SC[i].t = 0; SC[i].tel = 0; }
+  }
+  for (var k = 0; k < FILLS.length; k++) { FILLS[k].on = false; FILLS[k].cube = null; FILLS[k].ring.visible = FILLS[k].disc.visible = false; }
+  if (BOSS) { BOSS.ball = null; BOSS.serm = null; BOSS.wave = null; BOSS.slam = null; BOSS.walls = null; BOSS.over = null; }
+}
+function clearCubes() {
+  for (var i = 0; i < SC_N; i++) SC[i].st = 0;
+  for (var k = 0; k < FILLS.length; k++) { FILLS[k].on = false; FILLS[k].cube = null; FILLS[k].ring.visible = FILLS[k].disc.visible = false; }
+  BOSS.ball = null;
+}
+
+// ---- the boss body (render-rate) ----
+function shimmerCol(base, tel, flash, idx, now) {
+  TMPC.copy(base);
+  if (tel > 0) TMPC.lerp(RED_C, clampN(tel, 0, 1));
+  var sh = 0.78 + 0.26 * Math.sin(now * 0.006 + idx * 1.71); // the backlit shimmer
+  TMPC.multiplyScalar(sh + flash * 1.6);
+  return TMPC;
+}
+function bossFrame(rdt, now, alpha) {
+  var B = BOSS, e = B.e;
+  var dmg = 1 - clampN(e.hp / 60, 0, 1);
+  var death = B.st === "death";
+  var unfolded = false; // the boss never turns into a plane anymore
+  angel.position.lerpVectors(e.prev, e.p, alpha);
+  angel.position.y += Math.sin(now * 0.0011) * ((B.st === "idle" || B.st === "descend") ? 0.35 : 0.1);
+  if (death) angel.position.y -= B.deadT * 1.2;
+  var fy = Math.atan2(S.p.x - e.p.x, S.p.z - e.p.z);
+  // pose pipeline: sample from real attack state, approach, apply
+  var attackPose = sampleAngelAttackPose(B, now);
+  approachAngelPose(ANGEL_POSE_CURRENT, attackPose, rdt);
+  var AP = ANGEL_POSE_CURRENT;
+  // facing accumulator: attack yaw never feeds back into the base facing
+  B.renderYaw += wrapAngle(fy - B.renderYaw) * damp(1.6, rdt);
+  angel.rotation.x = AP.bodyPitch;
+  angel.rotation.z = AP.bodyRoll;
+  angel.rotation.y = B.renderYaw + AP.bodyYaw;
+  angel.position.y += AP.bodyLift;
+  angel.visible = !unfolded;
+  // unique parts shimmer, flash on hits, pulse red in the slam windup
+  var telG = B.st === "slam" && B.sub === 0 ? Math.min(1, B.t * 2) : 0;
+  for (var hp2 = 0; hp2 < HULL_PARTS.length; hp2++) {
+    var HP2 = HULL_PARTS[hp2];
+    HP2.mat.color.copy(shimmerCol(HP2.base, telG, e.flash, hp2 + HP2.ph, now));
+  }
+  // head remains aware of the player while the torso turns into attack poses
+  var gaze = wrapAngle(fy - angel.rotation.y);
+  aHead.body.rotation.y += (gaze + AP.headYaw - aHead.body.rotation.y) * damp(6, rdt);
+  aHead.body.rotation.x += (AP.headPitch + Math.sin(now * 0.0013) * 0.06 - aHead.body.rotation.x) * damp(8, rdt);
+  aHead.body.rotation.z += (AP.headRoll - aHead.body.rotation.z) * damp(8, rdt);
+  aHead.hull.rotation.copy(aHead.body.rotation);
+  // the halo is choreography now: lifted, tilted, thrown, dropped by poses
+  haloGroup.position.y = 5.0 + AP.haloLift;
+  haloGroup.position.z = -0.9 + AP.haloBack;
+  haloGroup.rotation.x += (AP.haloPitch - haloGroup.rotation.x) * damp(9, rdt);
+  haloGroup.rotation.y += (AP.haloYaw - haloGroup.rotation.y) * damp(9, rdt);
+  haloGroup.rotation.z += rdt * AP.haloSpin;
+  haloGroup.scale.setScalar(AP.haloScale);
+  var frac1 = e.hp <= 40, frac2 = e.hp <= 30;
+  for (var hs2 = 0; hs2 < HALO_SEGS.length; hs2++) {
+    var HG = HALO_SEGS[hs2];
+    var brk = (frac1 && hs2 === 3) || (frac2 && hs2 === 6);
+    if (brk && !HG.broken) { HG.broken = true; HG.b.rotation.x = 0.5; HG.h.rotation.x = 0.5; }
+    if (!brk && HG.broken) { HG.broken = false; HG.b.rotation.x = 0; HG.h.rotation.x = 0; }
+    HG.h.material.color.copy(HG.broken ? TMPC.copy(EMBER_C).multiplyScalar(0.12) : shimmerCol(EMBER_C, telG, e.flash, hs2 + 8, now));
+  }
+  // the Foundation Seed: red sealed, GOLD and beating when it can bleed
+  aSeed.body.rotation.y += rdt * (B.vuln ? 2.2 : 0.5);
+  aSeed.hull.rotation.copy(aSeed.body.rotation);
+  var seedCol = TMPC.copy(B.vuln ? GOLD_C : SEED_RED).multiplyScalar((B.vuln ? 1.1 + 0.5 * Math.sin(now * 0.014) : 0.85) + e.flash * 1.6);
+  aSeed.hull.material.color.copy(seedCol);
+  var seedScale = B.vuln ? 1 + 0.1 * Math.sin(now * 0.014) : 0.92;
+  aSeed.body.scale.setScalar(seedScale);
+  aSeed.hull.scale.setScalar(seedScale * 1.12);
+  // the wings are the choreography: the rig applies the approached pose
+  applyWingRig(WING_RIG_L, AP.L, rdt, now, dmg);
+  applyWingRig(WING_RIG_R, AP.R, rdt, now, dmg);
+  // the body: a turning ball of cubes that drifts apart with damage,
+  // opens an APERTURE toward you when vulnerable, and dies in load-bearing order
+  var coreSpin = now * 0.00035;
+  var toPX = Math.sin(fy), toPZ = Math.cos(fy); // horizontal dir toward player
+  for (var ci3 = 0; ci3 < CORE_N; ci3++) {
+    var O = COREOFF[ci3];
+    if (unfolded) { silWrite(COREX, ci3, 0, -999, 0, 0, 0, 0, 0, CHALK_C); continue; }
+    var cs = Math.cos(coreSpin), sn = Math.sin(coreSpin);
+    var ox2 = O.x * cs - O.z * sn, oz2 = O.x * sn + O.z * cs;
+    // damage drift: the structure slowly loses cohesion as it bleeds
+    var scatter = 1 + dmg * 0.35;
+    var ap = 0;
+    if (B.vuln && !death) {
+      var olen = Math.sqrt(ox2 * ox2 + O.y * O.y + oz2 * oz2) || 1;
+      var facing = (ox2 * toPX + oz2 * toPZ) / olen;
+      if (facing > 0.45) ap = (facing - 0.45) * 2.4; // the shell parts toward the attacker
+    }
+    if (death) {
+      // collapse: cubes lose load one after another and fall
+      var fall = Math.max(0, B.deadT - ci3 * 0.055);
+      scatter += fall * 3.5;
+    }
+    silWrite(COREX, ci3,
+      angel.position.x + ox2 * (scatter + ap),
+      angel.position.y + 1.6 + O.y * scatter * (1 + ap * 0.3) + Math.sin(now * 0.0014 + O.rp) * 0.14 - (death ? Math.max(0, B.deadT - ci3 * 0.055) * 4 : 0),
+      angel.position.z + oz2 * (scatter + ap),
+      O.rp + now * 0.0004 * O.rs, O.rp * 2 + now * 0.0006 * O.rs, 0,
+      O.sc * (death ? Math.max(0, 1 - Math.max(0, B.deadT - ci3 * 0.055) * 0.6) : 1),
+      shimmerCol(CHALK_C, telG, e.flash, ci3, now));
+  }
+  silFlush(COREX);
+  // the Vestment rings: GOLD — the counter-target class — sharing one position
+  // source of truth with gameplay, following the body's bob
+  var bobX = angel.position.x - e.p.x, bobY = angel.position.y - e.p.y, bobZ = angel.position.z - e.p.z;
+  for (var ri2 = 0; ri2 < RING_N; ri2++) {
+    var R2 = RING[ri2];
+    if (!R2.on || unfolded || death) { silWrite(RGX, ri2, 0, -999, 0, 0, 0, 0, 0, GOLD_C); continue; }
+    ringPlatePos(ri2, V3d);
+    silWrite(RGX, ri2,
+      V3d.x + bobX, V3d.y + bobY, V3d.z + bobZ,
+      R2.ring === 0 ? 0.42 : 0, V3d.userAng + now * 0.0006, R2.ring === 0 ? 0 : -0.3, 1.3,
+      shimmerCol(GOLD_C, B.armor ? 0.4 : 0, e.flash * 0.6, ri2 + 30, now));
+  }
+  silFlush(RGX);
+  // sermon cubes
+  for (var ci2 = 0; ci2 < SC_N; ci2++) {
+    var C2 = SC[ci2];
+    if (C2.st === 0 || C2.t < 0) {
+      silWrite(SCX, ci2, 0, -999, 0, 0, 0, 0, 0, CHALK_C);
+      dummyB.position.set(0, -999, 0); dummyB.scale.setScalar(0); dummyB.updateMatrix();
+      scAura.setMatrixAt(ci2, dummyB.matrix);
+      continue;
+    }
+    // armed cubes breathe: the aura throbs and the body swells slightly
+    var armed = C2.tel > 0.7;
+    var throb = armed ? 1 + 0.035 * Math.sin(now * 0.006 + ci2 * 1.3) : 1;
+    silWrite(SCX, ci2, C2.x, C2.y, C2.z, C2.rx, C2.ry, C2.rz, C2.sc * throb,
+      shimmerCol(CHALK_C, C2.tel, 0, ci2 + 60, now));
+    dummyB.position.set(C2.x, C2.y, C2.z);
+    dummyB.rotation.set(C2.rx, C2.ry, C2.rz);
+    dummyB.scale.setScalar(C2.sc * throb * (armed ? 1.07 + 0.04 * Math.sin(now * 0.006 + ci2) : 1));
+    dummyB.updateMatrix();
+    scAura.setMatrixAt(ci2, dummyB.matrix);
+    TMPC.copy(CHALK_C).lerp(RED_C, clampN(C2.tel, 0, 1));
+    TMPC.multiplyScalar(armed ? 0.72 + 0.22 * Math.sin(now * 0.006 + ci2 * 1.3) : 0.45);
+    scAura.setColorAt(ci2, TMPC);
+  }
+  silFlush(SCX);
+  scAura.instanceMatrix.needsUpdate = true;
+  if (scAura.instanceColor) scAura.instanceColor.needsUpdate = true;
+  // ownership: energy-bead streams flow from the heart to controlled cubes
+  var tIdx = 0;
+  if (!death && !unfolded) {
+    for (var tc = 0; tc < SC_N && tIdx < STREAM_N; tc++) {
+      var CC = SC[tc];
+      if (CC.st === 0 || CC.t < 0 || CC.st === 9) continue;
+      var owned = (CC.mode === "rain2" && CC.st <= 3) || (CC.mode === "ball") || (CC.mode === "bolt" && CC.st <= 2) || (CC.mode === "wall" && CC.st === 1);
+      if (!owned) continue;
+      streamTo(tIdx++, angel.position.x, angel.position.y + 1.6, angel.position.z, CC.x, CC.y, CC.z, CC.tel > 0.7, now);
+    }
+  }
+  for (var th2 = tIdx; th2 < STREAM_N; th2++) hideStream(th2);
+  beadMesh.instanceMatrix.needsUpdate = true;
+  if (beadMesh.instanceColor) beadMesh.instanceColor.needsUpdate = true;
+  // the floor ring beneath the boss pulses while it calls material
+  var calling = B.st === "sermon" && B.serm && (B.serm.stage === 1 || B.serm.stage === 3) || B.st === "fling";
+  callRing.visible = calling && !death;
+  if (callRing.visible) {
+    callRing.position.set(e.p.x, GROUND_Y + 0.12, e.p.z);
+    var ck = 10 + 4 * Math.sin(now * 0.006);
+    callRing.scale.setScalar(ck);
+    callRing.material.opacity = 0.2 + 0.12 * Math.sin(now * 0.013);
+  }
+
+  // fill circles: the disc grows to meet the ring; full means the sky answers
+  for (var fj = 0; fj < FILLS.length; fj++) {
+    var F4 = FILLS[fj];
+    if (!F4.on) continue;
+    var kF = clampN(F4.t / F4.dur, 0, 1);
+    F4.disc.scale.setScalar(Math.max(0.01, F4.r * kF));
+    F4.disc.material.opacity = 0.13 + kF * 0.16;
+    F4.ring.material.opacity = 0.4 + 0.16 * Math.sin(now * 0.008 + fj);
+    // quiet ember while charging; urgent red only near completion
+    TMPC.set(0xffa06a).lerp(RED_C, wingSmooth((kF - 0.55) / 0.45));
+    F4.ring.material.color.copy(TMPC);
+    F4.disc.material.color.copy(TMPC);
+  }
+  crossGroup.visible = false; // retired: phase 3 is walls now
+  // title card
+  if (B.st === "descend") {
+    var kT = Math.min(1, B.t / 1.2);
+    titleCard.style.opacity = B.t < 2.6 ? kT : Math.max(0, 1 - (B.t - 2.6) / 0.9);
+  } else titleCard.style.opacity = 0;
+  // HP bar
+  bossFill.style.width = clampN(e.hp / 60, 0, 1) * 100 + "%";
+  bossFill.style.background = B.vuln ? "#FFD98A" : "#FF4438";
+  bossStateEl.textContent = B.phase === 1 ? "I \u00B7 THE SERMON" : B.phase === 2 ? (B.vuln ? "II \u00B7 EXPOSED" : "II \u00B7 THE VESTMENT") : (B.vuln ? "III \u00B7 STRIKE NOW" : "III \u00B7 THE FOUNDATION WALLS");
+}
+
+// ================== END TESSERON ============================================
+// ============================================================================
+
+// ================= HUD refs =================
+var scoreEl = $("score"), comboEl = $("combo"), lanceEl = $("lance"),
+    heartsEl = $("hearts"), bestEl = $("best"), hintEl = $("hint"), crossEl = $("cross"),
+    flashRed = $("flashRed"), flashHit = $("flashHit"), tintSlow = $("tintSlow"),
+    heatFill = $("heatFill"), heatWrap = $("heatWrap"), dashFill = $("dashFill"),
+    retEl = $("ret"), retRing = $("retRing"), hudEl = $("hud"),
+    flareBtn = $("flareBtn"), dashBtn = $("dashBtn"),
+    retCirc = $("retCirc"), retBr = $("retBr"), retSpin = $("retSpin"),
+    retTicks = $("retTicks"), retCore = $("retCore");
+var arrows = [$("ar0"), $("ar1"), $("ar2"), $("ar3")];
+var pops = [];
+function popAt(wp, text, color, big) {
+  var d = document.createElement("div");
+  d.className = "pop";
+  d.style.color = color;
+  d.style.fontSize = (big ? 21 : 14) + "px";
+  d.textContent = text;
+  hudEl.appendChild(d);
+  pops.push({ d: d, wp: wp.clone(), life: 0.9 });
+}
+
+// ================= game state =================
+var best = 0;
+var S = { mode: "menu", paused: false, lockActive: false, lockFail: false, keys: {}, mDX: 0, mDY: 0 };
+function resetGame() {
+  S.mode = "play"; S.paused = false;
+  S.t = 0; S.score = 0; S.combo = 0; S.maxCombo = 0; S.kills = 0;
+  S.hp = 3; S.inv = 0; S.lanceT = 0; S.ts = 1; S.freeze = 0; S.hitSlow = 0;
+  S.heat = 30; S.pdT = 0; S.pdCd = 0;
+  S.p = new THREE.Vector3(0, GROUND_Y + HOVER_ALT, 0); S.pPrev = S.p.clone();
+  S.vel = new THREE.Vector3();
+  S.strike = null; S.queued = null; S.melee = null;
+  S.dash = null; S.dashCd = 0; S.dashI = 0; S.ghostN = 0;
+  S.lockedE = null; S.lockSince = 0; S.lockCand = null; S.lockCandT = 0;
+  S.coyoteT = 0; S.lastLockSfx = 0; S.lockChirped = false; S.stance = 0;
+  S.assistOff = false; S.exhaleT = 0; S.graceT = 0; S.charge = null; S.dustCd = 0;
+  S.stringCd = 0; S.diveT = 0; S.wasBelow = false;
+  S.blDir = new THREE.Vector3(0.5, 0.7, -0.25).normalize(); S.blPush = 0; S.blLen = 2.9;
+  S.comboStep = -1; S.lastSwingT = -9;
+  S.blRoot = new THREE.Vector3(S.p.x + 0.85, S.p.y + 0.25, S.p.z);
+  for (var rz = 0; rz < ribbons.length; rz++) { ribbons[rz].state = 0; ribbons[rz].mesh.visible = false; ribbons[rz].samples.length = 0; }
+  bladeCore.visible = false;
+  S.spawnT = 1.0; S.enemies = []; S.bolts = []; S.slams = []; S.bombs = [];
+  S.yaw = 0; S.pitch = 0.06; S.dist = 9; S.roll = 0; S.lookRate = 0;
+  S.fov = 70; S.fovPunch = 0; S.speedFov = 0; S.shake = 0;
+  S.camAnchor = new THREE.Vector3(0, GROUND_Y + HOVER_ALT + 1.2, 0);
+  S.dyingT = 0; S.mDX = 0; S.mDY = 0;
+  trailPts.length = 0;
+  for (var i = 0; i < MAXS; i++) shardPool[i].life = 0;
+  heartsEl.textContent = "\u25C6\u25C6\u25C6";
+  hintEl.textContent = isTouch
+    ? "tap: lance / blade \u00B7 hold: cleave \u00B7 longer: skewer \u00B7 DASH + FLARE buttons"
+    : "WASD move \u00B7 SPACE fly \u00B7 C dive under the floor \u00B7 SHIFT dash \u00B7 LMB blade \u00B7 F lance \u00B7 RMB cleave / skewer \u00B7 E flare";
+  hintEl.style.opacity = 0.6;
+  flareBtn.style.display = isTouch ? "block" : "none";
+  dashBtn.style.display = isTouch ? "block" : "none";
+}
+
+var V3 = new THREE.Vector3(), V3b = new THREE.Vector3(), V3c = new THREE.Vector3(), V3d = new THREE.Vector3(), V3e = new THREE.Vector3(), V3f = new THREE.Vector3();
+
+function viewFwd(out) {
+  return out.set(-Math.sin(S.yaw) * Math.cos(S.pitch), Math.sin(S.pitch), -Math.cos(S.yaw) * Math.cos(S.pitch));
+}
+function dirToAngles(d) {
+  return { yaw: Math.atan2(-d.x, -d.z), pitch: Math.asin(clampN(d.y, -1, 1)) };
+}
+function inputDir(out) {
+  viewFwd(V3e);
+  out.set(0, 0, 0);
+  var R = V3c.crossVectors(V3e, V3d.set(0, 1, 0));
+  if (R.lengthSq() < 1e-6) R.set(1, 0, 0);
+  R.normalize();
+  if (S.keys["w"] || S.keys["arrowup"]) out.add(V3e);
+  if (S.keys["s"] || S.keys["arrowdown"]) out.sub(V3e);
+  if (S.keys["a"] || S.keys["arrowleft"]) out.sub(R);
+  if (S.keys["d"] || S.keys["arrowright"]) out.add(R);
+  if (S.keys[" "]) out.y += 1;
+  if (S.keys["c"] || S.keys["control"]) out.y -= 1;
+  return out;
+}
+
+// line of sight against pillar cylinders
+function los(a, b) {
+  var dx = b.x - a.x, dz = b.z - a.z;
+  var A = dx * dx + dz * dz;
+  if (A < 1e-6) return true;
+  for (var i = 0; i < pillars.length; i++) {
+    var c = pillars[i];
+    var fx = a.x - c.x, fz = a.z - c.z;
+    var rr = c.r + 0.4;
+    var B = 2 * (fx * dx + fz * dz);
+    var C = fx * fx + fz * fz - rr * rr;
+    var disc = B * B - 4 * A * C;
+    if (disc < 0) continue;
+    var sq = Math.sqrt(disc);
+    var t1 = (-B - sq) / (2 * A);
+    var t2 = (-B + sq) / (2 * A);
+    var t = t1 > 0.02 ? t1 : (t2 > 0.02 && t2 < 0.98 ? t2 : -1);
+    if (t > 0.02 && t < 0.98) {
+      var y = a.y + (b.y - a.y) * t;
+      if (y < c.top + 0.3) return false;
+    }
+  }
+  return true;
+}
+function pillarPushXZ(p, rad) {
+  for (var i = 0; i < pillars.length; i++) {
+    var c = pillars[i];
+    if (p.y > c.top + 0.2) continue;
+    var dx = p.x - c.x, dz = p.z - c.z;
+    var d = Math.hypot(dx, dz);
+    var min = c.r + rad;
+    if (d < min && d > 0.001) {
+      p.x = c.x + (dx / d) * min;
+      p.z = c.z + (dz / d) * min;
+      return { nx: dx / d, nz: dz / d };
+    }
+  }
+  return null;
+}
+
+// ================= spawning =================
+function countType(type) {
+  var n = 0;
+  for (var i = 0; i < S.enemies.length; i++) if (S.enemies[i].type === type && !S.enemies[i].dead) n++;
+  return n;
+}
+function spawn() {
+  var opts = [{ t: "drone", w: 10 }];
+  if (S.t > 25) opts.push({ t: "dart", w: 6 });
+  if (S.t > 50) opts.push({ t: "weaver", w: 5 });
+  if (S.t > 75) opts.push({ t: "zenith", w: 3 });
+  if (S.t > 100) opts.push({ t: "sentinel", w: 2.5 });
+  var pool = [], tw = 0;
+  for (var i = 0; i < opts.length; i++) {
+    if (countType(opts[i].t) < ETYPES[opts[i].t].cap) { pool.push(opts[i]); tw += opts[i].w; }
+  }
+  if (!pool.length) return;
+  var roll = Math.random() * tw, type = pool[0].t;
+  for (var j = 0; j < pool.length; j++) { roll -= pool[j].w; if (roll <= 0) { type = pool[j].t; break; } }
+  var cfg = ETYPES[type];
+  var dir = randDir();
+  dir.y *= 0.4;
+  if (Math.random() < 0.6) { viewFwd(V3c); if (dir.dot(V3c) < 0) dir.multiplyScalar(-1); }
+  dir.normalize();
+  var pos = S.p.clone().addScaledVector(dir, 42 + Math.random() * 20);
+  if (Math.hypot(pos.x, pos.z) > ARENA_R - 6) {
+    var m2 = (ARENA_R - 6) / Math.hypot(pos.x, pos.z);
+    pos.x *= m2; pos.z *= m2;
+  }
+  if (type === "zenith") pos.y = GROUND_Y + 17 + Math.random() * 4;
+  else if (type === "sentinel") pos.y = GROUND_Y + 1.6;
+  else pos.y = clampN(pos.y, GROUND_Y + 2.5, GROUND_Y + 14);
+  S.enemies.push({
+    type: type, cfg: cfg, p: pos, prev: pos.clone(), v: new THREE.Vector3(),
+    ph: Math.random() * 6.28, born: S.t, dead: false,
+    hp: cfg.hp, stun: 0, stag: 0, flash: 0, tel: 0,
+    sqT: 0, sqAx: new THREE.Vector3(0, 1, 0),
+    state: "app", st: 0, cd: 1.5 + Math.random() * 2,
+    facing: Math.random() * 6.28, launched: false,
+    aim: new THREE.Vector3(), pd: false,
+  });
+}
+
+// ================= targeting v3: angular + hysteresis + stability + LOS =================
+var LOCK_CONE = 0.26, LOCK_RANGE = 95;
+function angleToAim(e, aimDir, origin) {
+  V3d.subVectors(e.p, origin);
+  var d = V3d.length();
+  if (d > LOCK_RANGE || d < 0.5) return 99;
+  V3d.multiplyScalar(1 / d);
+  return Math.acos(clampN(V3d.dot(aimDir), -1, 1));
+}
+var cursor = { x: 0, y: 0 };
+function aimRay(out) {
+  if (S.lockActive || isTouch) return viewFwd(out);
+  var ndcX = (cursor.x / window.innerWidth) * 2 - 1;
+  var ndcY = -(cursor.y / window.innerHeight) * 2 + 1;
+  out.set(ndcX, ndcY, 0.5).unproject(camera).sub(camera.position).normalize();
+  return out;
+}
+function setLock(e, now) {
+  if (S.lockedE !== e) {
+    S.lockedE = e; S.lockSince = now; S.coyoteT = 0; S.lockChirped = false;
+    S.lockCand = null; S.lockCandT = 0;
+    if (now - S.lastLockSfx > 120) { sfx.lockS(); S.lastLockSfx = now; }
+  }
+}
+function updateLock(rdt, now) {
+  if (S.strike) return;
+  var aim = aimRay(V3c);
+  var bestE = null, bestA = LOCK_CONE;
+  for (var i = 0; i < S.enemies.length; i++) {
+    var e = S.enemies[i];
+    if (e.dead) continue;
+    var a = angleToAim(e, aim, camera.position);
+    if (a < bestA && los(S.p, e.p)) { bestA = a; bestE = e; }
+  }
+  var cur = S.lockedE && !S.lockedE.dead ? S.lockedE : null;
+  var curA = cur ? angleToAim(cur, aim, camera.position) : 99;
+  if (cur && curA > LOCK_CONE) {
+    S.coyoteT += rdt;
+    if (S.coyoteT > 0.1) cur = null;
+  } else S.coyoteT = 0;
+  if (!cur) {
+    if (bestE) setLock(bestE, now);
+    else { S.lockedE = null; S.lockCand = null; }
+    return;
+  }
+  S.lockedE = cur;
+  // stability window: a challenger must persist under the crosshair before we switch
+  if (bestE && bestE !== cur && bestA < curA * 0.72 && now - S.lockSince > 120) {
+    if (S.lockCand === bestE) {
+      S.lockCandT += rdt;
+      if (S.lockCandT > 0.07) setLock(bestE, now);
+    } else { S.lockCand = bestE; S.lockCandT = 0; }
+  } else { S.lockCand = null; S.lockCandT = 0; }
+}
+function pickAfterKill() {
+  var aim = viewFwd(V3c);
+  var bestE = null, bestA = 0.7;
+  for (var i = 0; i < S.enemies.length; i++) {
+    var e = S.enemies[i];
+    if (e.dead) continue;
+    var a = angleToAim(e, aim, camera.position);
+    if (a < bestA && los(S.p, e.p)) { bestA = a; bestE = e; }
+  }
+  if (!bestE) {
+    var bd = 70;
+    for (var j = 0; j < S.enemies.length; j++) {
+      var e2 = S.enemies[j];
+      if (e2.dead) continue;
+      var d = e2.p.distanceTo(S.p);
+      if (d < bd) { bd = d; bestE = e2; }
+    }
+  }
+  if (bestE) setLock(bestE, performance.now());
+  else S.lockedE = null;
+}
+function pickAtScreen(cx, cy, maxPx) {
+  var bestE = null, bd = maxPx;
+  for (var i = 0; i < S.enemies.length; i++) {
+    if (S.enemies[i].dead) continue;
+    V3.copy(S.enemies[i].p).project(camera);
+    if (V3.z > 1 || V3.z < -1) continue;
+    var sx = (V3.x * 0.5 + 0.5) * window.innerWidth;
+    var sy = (-V3.y * 0.5 + 0.5) * window.innerHeight;
+    var d = Math.hypot(sx - cx, sy - cy);
+    if (d < bd) { bd = d; bestE = S.enemies[i]; }
+  }
+  return bestE;
+}
+
+// ================= heat / damage =================
+function spendHeat(cost) {
+  if (S.heat < cost) {
+    sfx.denied();
+    heatWrap.style.background = "rgba(255,80,60,.4)";
+    setTimeout(function () { heatWrap.style.background = "rgba(232,238,242,.14)"; }, 160);
+    return false;
+  }
+  S.heat -= cost;
+  return true;
+}
+function gainHeat(x) { S.heat = Math.min(100, S.heat + x); }
+function fovKick(x) { S.fovPunch = Math.min(8, S.fovPunch + x); }
+
+function facingBlocked(e, fromPos) {
+  if (e.type !== "sentinel") return false;
+  var fx = Math.cos(e.facing), fz = Math.sin(e.facing);
+  var ax = fromPos.x - e.p.x, az = fromPos.z - e.p.z;
+  var m = Math.hypot(ax, az) || 1;
+  return (ax / m) * fx + (az / m) * fz > 0.55;
+}
+function shieldClank(e, at) {
+  sfx.clank();
+  burstShards(at, 8, 14, 0.15, null, 0.8);
+  S.shake = Math.max(S.shake, 0.08);
+  S.freeze = Math.max(S.freeze, 0.02);
+}
+function doHit(e, dmg, src, dir) {
+  if (e.type === "tesseron" && BOSS && !BOSS.vuln && !e.dead) { bossBlockedHit(dir); return; }
+  if (e.dead) return;
+  e.hp -= dmg;
+  e.flash = 1;
+  e.sqT = 0.16;
+  e.sqAx.copy(dir).normalize();
+  var canStag = e.type !== "sentinel" || src === "finisher" || src === "skewer" || src === "flare";
+  if (canStag) e.stag = Math.max(e.stag, 0.35);
+  e.v.addScaledVector(e.sqAx, src === "finisher" ? 9 : 5);
+  if (e.hp <= 0) { doKill(e, src); return; }
+  if (src === "blade" || src === "finisher") gainHeat(2);
+}
+function doKill(e, src) {
+  e.dead = true;
+  S.kills++; S.combo++; S.maxCombo = Math.max(S.maxCombo, S.combo);
+  var mult = Math.min(9, S.combo);
+  var pts = e.cfg.score * mult;
+  S.score += pts;
+  gainHeat(src === "lance" ? 12 : (src === "blade" || src === "finisher") ? 8 : 5);
+  S.lanceT = 0.8;
+  S.freeze = Math.min(0.09, 0.045 + S.combo * 0.005);
+  fovKick(3);
+  flashHit.style.opacity = 0.14;
+  var sz = e.cfg.r;
+  burstShards(e.p, Math.round(14 + sz * 5), 12 + sz * 2, 0.55, null, sz * 0.9);
+  ringAt(e.p, 0.42, EMBER);
+  V3e.set(e.p.x, GROUND_Y + 0.15, e.p.z);
+  ringAt(V3e, 0.55, EMBER, 9, true);
+  beamAt(e.p.x, e.p.y, e.p.z, EMBER);
+  popAt(e.p, "+" + pts, mult >= 5 ? GOLD : CHALK, false);
+  if (mult >= 2 && S.combo === (mult - 1) * 3 + 1) popAt(e.p.clone().add(V3e.set(0, 1.8, 0)), "\u00D7" + mult, GOLD, true);
+  sfx.kill(mult);
+  pickAfterKill();
+}
+function perfectDodge() {
+  if (S.pdCd > 0 || S.mode !== "play") return;
+  S.pdCd = 1.5; S.pdT = 0.28;
+  gainHeat(6);
+  ringAt(S.p, 0.4, 0xffffff, 6);
+  popAt(S.p.clone().add(V3e.set(0, 1.6, 0)), "PERFECT", GOLD, true);
+  sfx.perfectS();
+}
+function vulnHit() {
+  // attack connected: dodge-frames convert it into a perfect
+  if (S.inv > 0) return;
+  if (S.dashI > 0 || S.strike || S.graceT > 0) { perfectDodge(); return; }
+  hurt();
+}
+function hurt() {
+  if (S.inv > 0 || S.dashI > 0 || S.strike || S.graceT > 0 || S.mode !== "play") return;
+  S.hp--; S.inv = 1.3; S.combo = 0; S.lanceT = 0;
+  releaseRib(); S.melee = null; S.comboStep = -1;
+  S.shake = 0.5; flashRed.style.opacity = 0.85;
+  burstShards(S.p, 20, 10, 0.2);
+  sfx.hurtS();
+  heartsEl.textContent = new Array(Math.max(0, S.hp) + 1).join("\u25C6");
+  for (var i = 0; i < S.enemies.length; i++) {
+    var e = S.enemies[i];
+    V3.subVectors(e.p, S.p);
+    var d = V3.length();
+    if (d < 10 && d > 0.01) e.v.addScaledVector(V3.multiplyScalar(1 / d), (10 - d) * 4);
+  }
+  if (S.hp <= 0) {
+    S.mode = "dying"; S.dyingT = 1.1;
+    burstShards(S.p, 60, 16, 0.6);
+    ringAt(S.p, 0.9, EMBER, 12);
+    sfx.over();
+    if (document.exitPointerLock) document.exitPointerLock();
+  }
+}
+
+// ================= strikes (lance / cleave / skewer) =================
+function bez(a, c, b, k, out) {
+  var u = 1 - k;
+  out.set(
+    u * u * a.x + 2 * u * k * c.x + k * k * b.x,
+    u * u * a.y + 2 * u * k * c.y + k * k * b.y,
+    u * u * a.z + 2 * u * k * c.z + k * k * b.z
+  );
+  return out;
+}
+function bezDeriv(a, c, b, k, out) {
+  var u = 1 - k;
+  out.set(
+    2 * u * (c.x - a.x) + 2 * k * (b.x - c.x),
+    2 * u * (c.y - a.y) + 2 * k * (b.y - c.y),
+    2 * u * (c.z - a.z) + 2 * k * (b.z - c.z)
+  );
+  return out.normalize();
+}
+function makeSeg(from, target, throughDist, arcAmt, sideSign) {
+  var dir = new THREE.Vector3().subVectors(target.p, from);
+  var d = dir.length();
+  dir.multiplyScalar(1 / d);
+  var to = target.p.clone().addScaledVector(dir, throughDist);
+  if (Math.hypot(to.x, to.z) > ARENA_R - 2) {
+    var m2 = (ARENA_R - 2) / Math.hypot(to.x, to.z);
+    to.x *= m2; to.z *= m2;
+  }
+  if (to.y < GROUND_Y + 1.6) to.y = GROUND_Y + 1.6;
+  if (to.y > CEIL_Y - 1) to.y = CEIL_Y - 1;
+  var side = new THREE.Vector3().crossVectors(dir, Math.abs(dir.y) > 0.9 ? V3e.set(1, 0, 0) : V3e.set(0, 1, 0)).normalize();
+  var ctrl = new THREE.Vector3().lerpVectors(from, to, 0.5).addScaledVector(side, sideSign * Math.min(arcAmt, d * 0.14));
+  if (ctrl.y < GROUND_Y + 1.4) ctrl.y = GROUND_Y + 1.4;
+  return { from: from.clone(), ctrl: ctrl, to: to, targets: [{ e: target, killK: Math.max(0.15, d / (d + throughDist)), done: false }], sideSign: sideSign, dmg: 2, src: "lance" };
+}
+function startTraversal(type, segs, durPerSeg) {
+  S.strike = { type: type, segs: segs, seg: 0, t: 0, dur: durPerSeg };
+  S.assistOff = false;
+  releaseRib();
+  S.melee = null;
+  fovKick(type === "skewer" ? 8 : type === "cleave" ? 5 : 3);
+  if (type === "lance") sfx.lance();
+  else if (type === "cleave") sfx.cleaveS();
+  else sfx.skewerS();
+}
+function tryLance(target) {
+  var e = target || S.lockedE;
+  if (S.mode !== "play" || !e || e.dead) return;
+  if (S.strike) { S.queued = { e: e, kind: "lance" }; return; }
+  var d = e.p.distanceTo(S.p);
+  if (d > LANCE_R) return;
+  if (!los(S.p, e.p)) { sfx.denied(); return; }
+  var seg = makeSeg(S.p, e, 4.2, 2.2, Math.random() < 0.5 ? 1 : -1);
+  startTraversal("lance", [seg], Math.min(0.3, 0.15 + seg.from.distanceTo(seg.to) * 0.0016));
+}
+function tryCleave(target) {
+  var first = target || S.lockedE;
+  if (S.mode !== "play" || !first || first.dead || S.strike) return;
+  if (first.p.distanceTo(S.p) > LANCE_R || !los(S.p, first.p)) { sfx.denied(); return; }
+  if (!spendHeat(COST_CLEAVE)) return;
+  var segs = [], used = [first], from = S.p.clone(), sign = Math.random() < 0.5 ? 1 : -1;
+  var cur = first;
+  for (var n = 0; n < 3; n++) {
+    var seg = makeSeg(from, cur, 3.4, 3, sign);
+    seg.dmg = 3; seg.src = "cleave";
+    segs.push(seg);
+    from = seg.to;
+    sign *= -1;
+    var nxt = null, bd = 18;
+    for (var i = 0; i < S.enemies.length; i++) {
+      var c = S.enemies[i];
+      if (c.dead || used.indexOf(c) >= 0 || c.type === "zenith") continue;
+      var d = c.p.distanceTo(cur.p);
+      if (d < bd && los(from, c.p)) { bd = d; nxt = c; }
+    }
+    if (!nxt) break;
+    used.push(nxt); cur = nxt;
+  }
+  startTraversal("cleave", segs, 0.16);
+  popAt(S.p.clone(), "CLEAVE", GOLD, true);
+}
+function trySkewer(target) {
+  var e = target || S.lockedE;
+  if (S.mode !== "play" || !e || e.dead || S.strike) return;
+  if (!spendHeat(COST_SKEWER)) return;
+  var from = S.p.clone();
+  var dir = new THREE.Vector3().subVectors(e.p, from).normalize();
+  var maxLen = 90;
+  // truncate the ray at the first pillar it hits
+  for (var pi = 0; pi < pillars.length; pi++) {
+    var c = pillars[pi];
+    var fx = from.x - c.x, fz = from.z - c.z;
+    var A = dir.x * dir.x + dir.z * dir.z;
+    if (A < 1e-6) continue;
+    var B = 2 * (fx * dir.x + fz * dir.z);
+    var C = fx * fx + fz * fz - (c.r + 0.5) * (c.r + 0.5);
+    var disc = B * B - 4 * A * C;
+    if (disc < 0) continue;
+    var tHit = (-B - Math.sqrt(disc)) / (2 * A);
+    if (tHit > 1 && tHit < maxLen) {
+      var yh = from.y + dir.y * tHit;
+      if (yh < c.top + 0.3) maxLen = tHit;
+    }
+  }
+  var end = from.clone().addScaledVector(dir, maxLen);
+  if (end.y < GROUND_Y + 1.6) end.y = GROUND_Y + 1.6;
+  if (end.y > CEIL_Y - 1) end.y = CEIL_Y - 1;
+  var len = from.distanceTo(end);
+  var targets = [];
+  for (var i = 0; i < S.enemies.length; i++) {
+    var c2 = S.enemies[i];
+    if (c2.dead) continue;
+    V3b.subVectors(c2.p, from);
+    var along = V3b.dot(dir);
+    if (along < 0 || along > len) continue;
+    V3c.copy(from).addScaledVector(dir, along);
+    if (c2.p.distanceTo(V3c) < 2.4) targets.push({ e: c2, killK: Math.max(0.05, along / len), done: false });
+  }
+  targets.sort(function (a, b) { return a.killK - b.killK; });
+  var ctrl = new THREE.Vector3().lerpVectors(from, end, 0.5);
+  startTraversal("skewer", [{ from: from, ctrl: ctrl, to: end, targets: targets, sideSign: 0, dmg: 4, src: "skewer" }], 0.24);
+  burstShards(from, 14, 26, 0.9, dir);
+  flashHit.style.opacity = 0.2;
+  popAt(from.clone().addScaledVector(dir, 4), "SKEWER", GOLD, true);
+}
+function tryFlare() {
+  if (S.mode !== "play" || S.strike) return;
+  if (!spendHeat(COST_FLARE)) return;
+  sfx.flareS();
+  ringAt(S.p, 0.6, 0xa9dbe4, 16);
+  ringAt(S.p, 0.45, EMBER, 12);
+  V3e.set(S.p.x, GROUND_Y + 0.15, S.p.z);
+  ringAt(V3e, 0.6, 0xa9dbe4, 15, true);
+  burstShards(S.p, 26, 18, 0.4);
+  S.shake = Math.max(S.shake, 0.2);
+  flashHit.style.opacity = 0.1;
+  for (var i = 0; i < S.enemies.length; i++) {
+    var e = S.enemies[i];
+    V3.subVectors(e.p, S.p);
+    var d = V3.length();
+    if (d < 15 && d > 0.01) {
+      e.v.addScaledVector(V3.multiplyScalar(1 / d), (15 - d) * 5 + 14);
+      e.stun = 1.2;
+      if (e.type === "dart" && e.state === "tel") { e.state = "tired"; e.st = 0; e.tel = 0; }
+      if (e.type === "sentinel" && e.state === "tel") { e.state = "cool"; e.st = 0; e.tel = 0; e.cd = 4; e.stag = 0.5; }
+    }
+  }
+  for (var b = 0; b < S.bolts.length; b++) {
+    if (S.bolts[b].p.distanceTo(S.p) < 15) { S.bolts[b].dead = true; burstShards(S.bolts[b].p, 4, 10, 0.9, null, 0.6); }
+  }
+  sfx.boltPop();
+}
+function tryDash() {
+  if (S.mode !== "play" || S.dash || S.dashCd > 0 || S.strike) return;
+  viewFwd(V3e); V3e.y = 0;
+  if (V3e.lengthSq() < 1e-4) V3e.set(0, 0, -1);
+  V3e.normalize();
+  V3c.set(-V3e.z, 0, V3e.x); // camera-relative right, flat
+  var dir = new THREE.Vector3();
+  if (S.keys["w"] || S.keys["arrowup"]) dir.add(V3e);
+  if (S.keys["s"] || S.keys["arrowdown"]) dir.sub(V3e);
+  if (S.keys["a"] || S.keys["arrowleft"]) dir.sub(V3c);
+  if (S.keys["d"] || S.keys["arrowright"]) dir.add(V3c);
+  if (dir.lengthSq() < 0.01) dir.copy(V3e); // no input: dash flat-forward
+  dir.normalize();
+  S.dash = { t: 0, dur: DASH_DUR, dir: dir.clone() };
+  S.dashI = DASH_DUR + 0.06;
+  S.dashCd = DASH_CD;
+  S.ghostN = 0;
+  // swings ride through the dash: cut while you slip
+  fovKick(4);
+  sfx.dashS();
+}
+
+// ================= the blade =================
+function tryBasic(target) {
+  var e = target || S.lockedE;
+  if (S.mode !== "play") return;
+  if (!e || e.dead) return;
+  if (e.p.distanceTo(S.p) <= BLADE_R) meleeSwing(e);
+  else tryLance(e);
+}
+function releaseRib() {
+  if (S.melee && S.melee.rib) { S.melee.rib.state = 2; S.melee.rib.fadeT = 0; S.melee.rib = null; }
+}
+function meleeSwing(e) {
+  if (S.mode !== "play") return;
+  if (S.strike) { S.queued = { e: e || S.lockedE, kind: "slash" }; return; }
+  if (S.stringCd > 0) return; // the ender is terminal
+  if (S.melee && (S.melee.phase === "swing" || S.melee.phase === "windup" || S.melee.phase === "settle")) { S.melee.queued = true; return; }
+  var step;
+  if (S.melee && S.melee.phase === "win") step = (S.melee.step + 1) % 4;
+  else if (S.comboStep >= 0 && S.t - S.lastSwingT < 2.4) step = (S.comboStep + 1) % 4;
+  else step = 0;
+  var chained = !!S.melee;
+  var tgt = e || S.lockedE;
+  if (!tgt || tgt.dead) {
+    viewFwd(V3e);
+    var bAim = 15, cand = null;
+    for (var ai = 0; ai < S.enemies.length; ai++) {
+      var ae = S.enemies[ai];
+      if (ae.dead) continue;
+      var ad = ae.p.distanceTo(S.p);
+      if (ad > bAim) continue;
+      V3b.subVectors(ae.p, S.p).normalize();
+      if (V3b.dot(V3e) > 0.45) { bAim = ad; cand = ae; }
+    }
+    if (cand) tgt = cand;
+  }
+  var C = CHOREO[step];
+  // swing plane basis, tilted toward the target when one exists
+  var f = new THREE.Vector3();
+  if (tgt && !tgt.dead && tgt.p.distanceTo(S.p) < 16) f.subVectors(tgt.p, S.p).normalize();
+  else viewFwd(f);
+  var r = new THREE.Vector3().crossVectors(f, UP);
+  if (r.lengthSq() < 1e-4) r.set(1, 0, 0);
+  r.normalize();
+  var u = new THREE.Vector3().crossVectors(r, f).normalize();
+  var d = new THREE.Vector3().copy(r).multiplyScalar(C.dx).addScaledVector(u, C.dy).normalize();
+  var dPerp = new THREE.Vector3().crossVectors(f, d);
+  var jit = (Math.random() - 0.5) * 0.22;
+  d.multiplyScalar(Math.cos(jit)).addScaledVector(dPerp, Math.sin(jit)).normalize();
+  var thJ = C.thrust ? C.th : C.th + (Math.random() - 0.5) * 0.16;
+  var A = f.clone();
+  var B = d;
+  // a real string never stops: chained cuts begin at the blade's current angle
+  var thStart = -thJ;
+  if (C.thrust) thStart = 0;
+  else if (chained) {
+    thStart = clampN(Math.atan2(S.blDir.dot(d), S.blDir.dot(f)), -thJ * 1.15, -thJ * 0.35);
+  }
+  var rib = null;
+  for (var ri3 = 0; ri3 < ribbons.length; ri3++) if (ribbons[ri3].state === 0) { rib = ribbons[ri3]; break; }
+  if (!rib) rib = ribbons[0];
+  rib.state = 1; rib.fadeT = 0; rib.samples.length = 0;
+  rib.mesh.material.uniforms.uAll.value = 1;
+  S.melee = { step: step, t: 0, dur: C.dur, phase: "windup", wDur: chained ? 0.025 : C.wu + 0.05,
+    target: tgt, queued: false, win: 0.6, thrust: !!C.thrust,
+    f: f, A: A, B: B, th0: thStart, th1: C.thrust ? 0.001 : thJ, fb: 0, bs: 1, dn: 0,
+    lastTh: thStart, push: 0, setDur: C.set, pw: C.pw, drag: 0, lunged: false, hitSet: [], hits: 0, finFx: false, rib: rib,
+    fromDir: S.blDir.clone() };
+  S.comboStep = step;
+  S.lastSwingT = S.t;
+  if (!tgt || tgt.dead || tgt.p.distanceTo(S.p) > 14.5) S.vel.addScaledVector(f, 7); // committed step
+  blip(95, 240, S.melee.wDur + C.dur * 0.4, "sine", 0.03); // the coil hums
+  fovKick(step === 3 ? 2.5 : 1.2);
+}
+function meleeSweep(m, thPrev, thNow) {
+  bladeDir(m, thNow, V3c); // current blade line
+  var len = m.thrust ? 9.5 : m.step === 3 ? BLADE_LEN_FIN : BLADE_LEN;
+  ribRoot(m, V3f);
+  var rx = V3f.x, ry = V3f.y, rz = V3f.z;
+  // sweep tangent — knockback follows the cut, not the center
+  bladeDir(m, thNow + (m.th1 > m.th0 ? 0.08 : -0.08), V3d);
+  V3d.sub(V3c).normalize();
+  if (m.thrust) V3d.copy(V3c);
+  // the fan swept this step: everything inside it is hit — no gaps, ever
+  var lo = Math.min(thPrev, thNow) - 0.12, hi = Math.max(thPrev, thNow) + 0.12;
+  var nX = m.f.y * m.B.z - m.f.z * m.B.y;
+  var nY = m.f.z * m.B.x - m.f.x * m.B.z;
+  var nZ = m.f.x * m.B.y - m.f.y * m.B.x;
+  for (var i = 0; i < S.enemies.length; i++) {
+    var e = S.enemies[i];
+    if (e.dead || m.hitSet.indexOf(e) >= 0) continue;
+    var px = e.p.x - rx, py = e.p.y - ry, pz = e.p.z - rz;
+    var hitE = false, cxp = 0, cyp = 0, czp = 0;
+    if (m.thrust) {
+      // pierce corridor along the whole line
+      var along = clampN(px * V3c.x + py * V3c.y + pz * V3c.z, 0, len);
+      cxp = rx + V3c.x * along; cyp = ry + V3c.y * along; czp = rz + V3c.z * along;
+      var dd = Math.sqrt((e.p.x - cxp) * (e.p.x - cxp) + (e.p.y - cyp) * (e.p.y - cyp) + (e.p.z - czp) * (e.p.z - czp));
+      hitE = dd < e.cfg.r + 1.3;
+    } else {
+      var a = px * m.f.x + py * m.f.y + pz * m.f.z;
+      var b = px * m.B.x + py * m.B.y + pz * m.B.z;
+      var c = px * nX + py * nY + pz * nZ;
+      var phi = Math.atan2(b, a);
+      var rad = Math.sqrt(a * a + b * b);
+      if (phi >= lo && phi <= hi && rad < len + e.cfg.r && rad > 0.3 && Math.abs(c) < e.cfg.r + 1.7) {
+        hitE = true;
+        var rc = Math.min(rad, len);
+        cxp = rx + (m.f.x * Math.cos(phi) + m.B.x * Math.sin(phi)) * rc;
+        cyp = ry + (m.f.y * Math.cos(phi) + m.B.y * Math.sin(phi)) * rc;
+        czp = rz + (m.f.z * Math.cos(phi) + m.B.z * Math.sin(phi)) * rc;
+      }
+    }
+    if (!hitE) continue;
+    m.hitSet.push(e);
+    V3e.set(cxp, cyp, czp);
+    if (facingBlocked(e, S.p) && !m.thrust) { // the thrust pierces shields
+      if (m.step === 3) e.stag = Math.max(e.stag, 0.5);
+      m.drag = Math.min(0.55, m.drag + 0.45); // jarred off the shield
+      shieldClank(e, V3e);
+      continue;
+    }
+    V3b.copy(V3d).addScaledVector(V3c, 0.3);
+    if (m.step === 3) V3b.y += 0.6;
+    doHit(e, m.step === 3 ? 4 : 1, m.step === 3 ? "finisher" : "blade", V3b);
+    if (m.step === 3 && !e.dead) {
+      e.v.addScaledVector(V3c, 20); e.v.y += 4; e.stag = Math.max(e.stag, 0.7);
+      sfx.launchS();
+    }
+    if (m.thrust) {
+      burstShards(V3e, 10, 24, 0.85, V3c, 0.9);
+      blip(150, 1200, 0.08, "sawtooth", 0.1);
+      blip(55, 30, 0.25, "sine", 0.28);
+    }
+    m.hits++;
+    if (!m.thrust) m.drag = Math.min(0.45, m.drag + 0.3); // the blade bites; the thrust never stalls
+    if (!m.lunged) { m.lunged = true; S.vel.addScaledVector(m.f, 7 * m.pw); } // momentum carries you through
+    burstShards(V3e, 6, 18, 0.35, V3d, 0.8);
+    ringAt(V3e, 0.22, 0xffe9d2, 4);
+    S.freeze = Math.max(S.freeze, m.step === 3 ? 0.1 : 0.04);
+    S.shake = Math.max(S.shake, 0.07 + m.hits * 0.015);
+    fovKick(1);
+    sfx.chink(m.step);
+    if (m.hits === 3) blip(70, 40, 0.12, "sine", 0.18);
+  }
+  // bolts share the sector: the fan clears projectiles wholesale
+  for (var bq = S.bolts.length - 1; bq >= 0; bq--) {
+    var bl = S.bolts[bq];
+    if (bl.dead) continue;
+    var qx = bl.p.x - rx, qy = bl.p.y - ry, qz = bl.p.z - rz;
+    var cut = false;
+    if (m.thrust) {
+      var al2 = clampN(qx * V3c.x + qy * V3c.y + qz * V3c.z, 0, len);
+      var bx = rx + V3c.x * al2, by = ry + V3c.y * al2, bz = rz + V3c.z * al2;
+      cut = (bl.p.x - bx) * (bl.p.x - bx) + (bl.p.y - by) * (bl.p.y - by) + (bl.p.z - bz) * (bl.p.z - bz) < 2.6;
+    } else {
+      var a2 = qx * m.f.x + qy * m.f.y + qz * m.f.z;
+      var b2 = qx * m.B.x + qy * m.B.y + qz * m.B.z;
+      var c2 = qx * nX + qy * nY + qz * nZ;
+      var phi2 = Math.atan2(b2, a2);
+      cut = phi2 >= lo && phi2 <= hi && (a2 * a2 + b2 * b2) < len * len && Math.abs(c2) < 1.6;
+    }
+    if (cut) {
+      bl.dead = true; gainHeat(2);
+      burstShards(bl.p, 4, 12, 0.9, null, 0.6);
+      sfx.boltPop();
+    }
+  }
+  if (m.step === 3 && !m.finFx && m.hits > 0) {
+    m.finFx = true;
+    ringAt(S.p, 0.35, EMBER, 9);
+    V3e.set(S.p.x, GROUND_Y + 0.15, S.p.z);
+    ringAt(V3e, 0.45, EMBER, 8, true);
+  }
+}
+function spawnBolt(e) {
+  if (S.bolts.length >= MAXB) return;
+  var dir = new THREE.Vector3().subVectors(S.p, e.p).normalize();
+  S.bolts.push({ p: e.p.clone().addScaledVector(dir, 1.4), prev: e.p.clone(), v: dir.multiplyScalar(11), life: 6, dead: false });
+  e.flash = 0.6;
+  sfx.boltFire();
+}
+function launchBombs(e) {
+  var n = 4;
+  for (var i = 0; i < n; i++) {
+    if (S.bombs.length >= 6) break;
+    var bx, bz;
+    if (i === 0) { bx = S.p.x + S.vel.x * 0.9; bz = S.p.z + S.vel.z * 0.9; }
+    else {
+      var a = Math.random() * 6.283, rr = 1.5 + Math.random() * 6.5;
+      bx = S.p.x + Math.cos(a) * rr; bz = S.p.z + Math.sin(a) * rr;
+    }
+    S.bombs.push({ x: bx, z: bz, t: 0 });
+  }
+  e.flash = 0.7;
+  blip(300, 90, 0.35, "sawtooth", 0.1);
+}
+
+// ================= input =================
+window.addEventListener("keydown", function (e) {
+  var k = e.key.toLowerCase();
+  var was = S.keys[k];
+  S.keys[k] = true;
+  if (S.mode === "play" && (k === " " || k.indexOf("arrow") === 0)) e.preventDefault();
+  if (S.mode !== "play") return;
+  if ((k === "e" || k === "q") && !was) tryFlare();
+  if (k === "f" && !was) tryLance(null);
+  if (k === "shift" && !was) tryDash();
+});
+window.addEventListener("keyup", function (e) { S.keys[e.key.toLowerCase()] = false; });
+window.addEventListener("blur", function () { S.keys = {}; });
+
+function requestLock() {
+  if (isTouch || S.lockFail) return;
+  try {
+    if (canvas.requestPointerLock) {
+      var pr = canvas.requestPointerLock({ unadjustedMovement: true });
+      if (pr && pr.catch) pr.catch(function () { try { canvas.requestPointerLock(); } catch (e2) {} });
+    } else S.lockFail = true;
+  } catch (err) {
+    try { canvas.requestPointerLock(); } catch (e3) { S.lockFail = true; }
+  }
+}
+document.addEventListener("pointerlockchange", function () {
+  S.lockActive = (document.pointerLockElement === canvas);
+  if (S.lockActive) { S.paused = false; hideEl($("resume")); }
+  else if (S.mode === "play" && !isTouch && !S.lockFail) { S.paused = true; show($("resume")); }
+});
+document.addEventListener("pointerlockerror", function () {
+  S.lockFail = true; S.paused = false; hideEl($("resume"));
+});
+document.addEventListener("mousemove", function (e) {
+  if (!S.lockActive) return;
+  var mx = e.movementX || 0, my = e.movementY || 0;
+  // pointer-lock spike filter: browsers occasionally fire absurd one-event jumps
+  if (mx > 350 || mx < -350 || my > 350 || my < -350) return;
+  S.mDX += mx;
+  S.mDY += my;
+});
+canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+canvas.addEventListener("mousedown", function (e) {
+  if (!S.lockActive) return;
+  if (e.button === 0) meleeSwing(S.lockedE);
+  else if (e.button === 2) { S.charge = { t: 0 }; sfx.chargeS(); }
+});
+window.addEventListener("mouseup", function (e) {
+  if (!S.lockActive || e.button !== 2 || !S.charge) return;
+  var t = S.charge.t; S.charge = null;
+  if (t >= 0.3) trySkewer(null);
+  else tryCleave(null);
+});
+var pDown = null, orbited = false;
+canvas.addEventListener("pointerdown", function (e) {
+  audioEnsure();
+  if (S.lockActive) return;
+  if (!isTouch && !S.lockFail && S.mode === "play") { requestLock(); return; }
+  pDown = { x: e.clientX, y: e.clientY, t: performance.now(), targetE: pickAtScreen(e.clientX, e.clientY, 190) };
+  orbited = false;
+  if (pDown.targetE && S.mode === "play") S.charge = { t: 0, touch: true };
+});
+window.addEventListener("pointermove", function (e) {
+  cursor.x = e.clientX; cursor.y = e.clientY;
+  if (S.lockActive || !pDown) return;
+  var dx = e.clientX - pDown.x, dy = e.clientY - pDown.y;
+  if (orbited || Math.hypot(dx, dy) > 9) {
+    orbited = true;
+    S.charge = null;
+    S.mDX += dx * 2.1; S.mDY += dy * 2.1;
+    pDown.x = e.clientX; pDown.y = e.clientY;
+  }
+});
+window.addEventListener("pointerup", function (e) {
+  if (S.lockActive) { pDown = null; return; }
+  if (pDown && !orbited && S.mode === "play") {
+    var held = (performance.now() - pDown.t) / 1000;
+    var target = pDown.targetE && !pDown.targetE.dead ? pDown.targetE : pickAtScreen(e.clientX, e.clientY, 190);
+    S.charge = null;
+    if (target) {
+      if (held >= 0.4) trySkewer(target);
+      else if (held >= 0.2) tryCleave(target);
+      else tryBasic(target);
+    }
+  }
+  pDown = null;
+});
+window.addEventListener("pointercancel", function () { pDown = null; S.charge = null; });
+flareBtn.addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); tryFlare(); });
+dashBtn.addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); tryDash(); });
+
+// ================= fixed-step simulation =================
+var FWD = new THREE.Vector3(), RIGHT = new THREE.Vector3(), WISH = new THREE.Vector3();
+var UP = new THREE.Vector3(0, 1, 0);
+
+function step(h) {
+  S.t += h;
+  S.pPrev.copy(S.p);
+  for (var i = 0; i < S.enemies.length; i++) S.enemies[i].prev.copy(S.enemies[i].p);
+  for (var bi = 0; bi < S.bolts.length; bi++) S.bolts[bi].prev.copy(S.bolts[bi].p);
+  S.graceT -= h; S.dashCd -= h; S.dashI -= h;
+
+  // ---- player motion ----
+  if (S.strike) {
+    var st = S.strike;
+    st.t += h;
+    var seg = st.segs[st.seg];
+    var k = easeInOutCubic(Math.min(1, st.t / st.dur));
+    bez(seg.from, seg.ctrl, seg.to, k, S.p);
+    if (S.p.y < GROUND_Y + 1.2) S.p.y = GROUND_Y + 1.2;
+    var aborted = false;
+    for (var ki = 0; ki < seg.targets.length; ki++) {
+      var tk = seg.targets[ki];
+      if (!tk.done && k >= tk.killK) {
+        tk.done = true;
+        if (!tk.e.dead) {
+          bezDeriv(seg.from, seg.ctrl, seg.to, k, V3e);
+          if (seg.src !== "skewer" && facingBlocked(tk.e, seg.from)) {
+            // the shield throws you back
+            shieldClank(tk.e, S.p);
+            S.strike = null; S.queued = null;
+            S.vel.copy(V3e).multiplyScalar(-15);
+            S.graceT = 0.15; S.exhaleT = 0.25;
+            aborted = true;
+            break;
+          }
+          doHit(tk.e, seg.dmg, seg.src, V3e);
+          if (seg.src === "skewer") { ringAt(tk.e.p, 0.5, EMBER, 10); burstShards(tk.e.p, 10, 20, 0.8, V3e); }
+        }
+      }
+    }
+    if (!aborted) {
+      // strikes shear through bolts
+      for (var bd = 0; bd < S.bolts.length; bd++) {
+        var blt = S.bolts[bd];
+        if (!blt.dead && blt.p.distanceTo(S.p) < 1.7) {
+          blt.dead = true; gainHeat(4);
+          burstShards(blt.p, 4, 12, 0.9, null, 0.6);
+          sfx.boltPop();
+        }
+      }
+      if (st.t >= st.dur) {
+        st.seg++;
+        st.t = 0;
+        if (st.seg >= st.segs.length) {
+          bezDeriv(seg.from, seg.ctrl, seg.to, 1, V3e);
+          S.vel.copy(V3e).multiplyScalar(6);
+          S.exhaleT = 0.22;
+          S.graceT = 0.1;
+          S.strike = null;
+          if (S.queued) {
+            if (S.queued.kind === "slash") meleeSwing(S.queued.e && !S.queued.e.dead ? S.queued.e : S.lockedE);
+            else if (S.queued.e && !S.queued.e.dead) tryLance(S.queued.e);
+          }
+          S.queued = null;
+        }
+      }
+    }
+  } else if (S.dash) {
+    var da = S.dash;
+    da.t += h;
+    var dsp = 165 * Math.exp(-16 * da.t);
+    S.p.addScaledVector(da.dir, dsp * h);
+    if (da.t >= da.dur) {
+      S.vel.copy(da.dir).multiplyScalar(9);
+      S.exhaleT = 0.18;
+      S.dash = null;
+    }
+  } else {
+    // grounded: WASD moves on the floor plane, camera-yaw relative
+    viewFwd(FWD);
+    FWD.y = 0;
+    if (FWD.lengthSq() < 1e-4) FWD.set(0, 0, -1);
+    FWD.normalize();
+    RIGHT.set(-FWD.z, 0, FWD.x);
+    WISH.set(0, 0, 0);
+    if (S.keys["w"] || S.keys["arrowup"]) WISH.add(FWD);
+    if (S.keys["s"] || S.keys["arrowdown"]) WISH.sub(FWD);
+    if (S.keys["a"] || S.keys["arrowleft"]) WISH.sub(RIGHT);
+    if (S.keys["d"] || S.keys["arrowright"]) WISH.add(RIGHT);
+    var upIn = !!S.keys[" "], dnIn = !!(S.keys["c"] || S.keys["control"]);
+    var moving = WISH.lengthSq() > 0.001;
+
+    if (S.exhaleT > 0) {
+      S.exhaleT -= h;
+      if (moving) { S.vel.multiplyScalar(0.25); S.exhaleT = 0; }
+      else S.vel.multiplyScalar(Math.exp(-8 * h));
+    }
+    var fr = moving ? FR_MOVE : FR_IDLE;
+    S.vel.x *= Math.exp(-fr * h);
+    S.vel.z *= Math.exp(-fr * h);
+    if (moving) {
+      WISH.normalize();
+      var cur = S.vel.x * WISH.x + S.vel.z * WISH.z;
+      var add = MOVE_MAX - cur;
+      if (add > 0) {
+        S.vel.x += WISH.x * Math.min(MOVE_ACCEL * h, add);
+        S.vel.z += WISH.z * Math.min(MOVE_ACCEL * h, add);
+      }
+    }
+    // vertical: anchored to the surface. SPACE flies, C dives under the floor,
+    // and the surface always reclaims you.
+    var SURF = GROUND_Y + HOVER_ALT;
+    var below = S.p.y < GROUND_Y + 0.3;
+    if (below) S.diveT += h; else S.diveT = Math.max(0, S.diveT - h * 2);
+    var diving = dnIn && !upIn && S.diveT < 1.6;
+    S.vel.y -= GRAV * h;
+    if (upIn) {
+      if (S.vel.y < 16) S.vel.y += 74 * h;
+    } else if (diving) {
+      S.vel.y += GRAV * h; // neutral while diving
+      if (S.vel.y > -10) S.vel.y -= 40 * h;
+    } else {
+      var errS = clampN((SURF - S.p.y) * (S.p.y < SURF ? 30 : 14), -60, 90);
+      S.vel.y += (GRAV + errS) * h;
+      S.vel.y *= Math.exp((S.p.y < SURF ? -6 : -7.5) * h);
+    }
+    if (!moving && S.exhaleT <= 0 && S.vel.lengthSq() < 0.25 && Math.abs(S.p.y - SURF) < 0.6) {
+      S.vel.set(0, 0, 0);
+    }
+    // melee magnetism: glide onto the lock mid-swing, settle softly between cuts
+    if (S.melee && S.melee.target && !S.melee.target.dead) {
+      V3.subVectors(S.melee.target.p, S.p);
+      var dm = V3.length();
+      if (S.melee.phase === "swing") {
+        if (S.melee.thrust) {
+          // the lunge owns the movement: punch straight through
+        } else if (dm < 14.5 && dm > 2.2) {
+          var gspd = clampN(dm * 6, 8, 30);
+          V3.multiplyScalar(gspd / dm);
+          S.vel.lerp(V3, 1 - Math.exp(-14 * h));
+        } else if (dm <= 2.2) {
+          S.vel.multiplyScalar(Math.exp(-10 * h));
+        }
+      } else if (dm < 3.5) {
+        S.vel.multiplyScalar(Math.exp(-5 * h));
+      }
+    }
+    if (S.vel.length() > 42) S.vel.setLength(42);
+    S.p.addScaledVector(S.vel, h);
+  }
+
+  // world limits (always)
+  var rrH = Math.hypot(S.p.x, S.p.z);
+  if (rrH > ARENA_R - 2) {
+    var nx = S.p.x / rrH, nz = S.p.z / rrH;
+    if (rrH > ARENA_R) { S.p.x = nx * ARENA_R; S.p.z = nz * ARENA_R; }
+    var vr = S.vel.x * nx + S.vel.z * nz;
+    if (vr > 0) { S.vel.x -= nx * vr * 1.25; S.vel.z -= nz * vr * 1.25; }
+  }
+  if (S.p.y < GROUND_Y - 3.5) { S.p.y = GROUND_Y - 3.5; if (S.vel.y < 0) S.vel.y = 0; }
+  var isBelow = S.p.y < GROUND_Y + 0.15;
+  if (isBelow !== S.wasBelow) {
+    S.wasBelow = isBelow;
+    V3e.set(S.p.x, GROUND_Y + 0.12, S.p.z);
+    ringAt(V3e, 0.4, 0xa9dbe4, 6, true);
+    burstShards(V3e, 8, 9, 0.15, null, 0.7);
+    blip(isBelow ? 400 : 260, isBelow ? 180 : 520, 0.12, "sine", 0.09);
+  }
+  if (S.p.y > CEIL_Y) { S.p.y = CEIL_Y; if (S.vel.y > 0) S.vel.y *= -0.3; }
+  var push = pillarPushXZ(S.p, 0.9);
+  if (push) {
+    var vp = S.vel.x * push.nx + S.vel.z * push.nz;
+    if (vp < 0) { S.vel.x -= push.nx * vp; S.vel.z -= push.nz * vp; }
+  }
+
+  // ---- melee: windup glide, analytic sweep, follow-through settle ----
+  S.stringCd = Math.max(0, S.stringCd - h);
+  if (S.melee) {
+    var m = S.melee;
+    m.t += h;
+    if (m.phase === "windup") {
+      m.push = -0.45 * easeInOutCubic(Math.min(1, m.t / m.wDur)) * m.pw;
+      if (m.t >= m.wDur) {
+        m.phase = "swing"; m.t = 0; m.lastTh = m.th0;
+        sfx.whoosh(m.step);
+        if (m.thrust) { S.vel.addScaledVector(m.f, 22); fovKick(5); } // the lunge
+      }
+    } else if (m.phase === "swing") {
+      if (m.drag > 0) { m.t -= h * m.drag; m.drag *= Math.exp(-9 * h); if (m.drag < 0.02) m.drag = 0; }
+      var kk2 = Math.min(1, m.t / m.dur);
+      var thNow = m.th0 + (m.th1 - m.th0) * easeOutQuart(kk2);
+      m.push = (-0.45 * Math.max(0, 1 - 2 * kk2) + 0.9 * Math.sin(3.1416 * kk2)) * m.pw;
+      if (m.thrust) {
+        m.push = 3.2 * easeOutCubic(Math.min(1, kk2 * 1.35));
+        var vfw = Math.max(S.vel.dot(m.f), 14);
+        S.vel.copy(m.f).multiplyScalar(vfw); // laser-straight lunge
+      }
+      if (kk2 > 0.02 && kk2 < 0.99) meleeSweep(m, m.lastTh, thNow);
+      if (m.rib) {
+        bladeDir(m, thNow, V3e);
+        pushRibbonSample(m.rib, ribRoot(m, V3f), V3e, m.thrust ? 9.5 : m.step === 3 ? BLADE_LEN_FIN : BLADE_LEN);
+      }
+      m.lastTh = thNow;
+      if (m.t >= m.dur) {
+        if (m.step === 3) S.stringCd = 0.3;
+        if (m.queued && m.step !== 3) {
+          // the follow-through IS the next windup: chain with zero dead time
+          if (m.rib) { m.rib.state = 2; m.rib.fadeT = 0; m.rib = null; }
+          m.phase = "win"; m.t = 0; m.queued = false;
+          meleeSwing(m.target && !m.target.dead ? m.target : S.lockedE);
+        } else {
+          if (m.thrust) S.vel.multiplyScalar(0.35); // the lunge lands
+          m.phase = "settle"; m.t = 0;
+        }
+      }
+    } else if (m.phase === "settle") {
+      var ks = Math.min(1, m.t / m.setDur);
+      var thS = m.th1 + (m.th1 > m.th0 ? 1 : -1) * 0.5 * easeOutCubic(ks);
+      m.push = Math.max(0, 0.3 * m.pw * (1 - ks));
+      if (m.thrust) m.push = 3.2 * (1 - easeInOutCubic(ks));
+      if (m.rib) {
+        bladeDir(m, thS, V3e);
+        pushRibbonSample(m.rib, ribRoot(m, V3f), V3e, m.thrust ? 9.5 : m.step === 3 ? BLADE_LEN_FIN : BLADE_LEN);
+      }
+      if (m.t >= m.setDur) {
+        if (m.rib) { m.rib.state = 2; m.rib.fadeT = 0; m.rib = null; }
+        m.phase = "win"; m.t = 0;
+        if (m.queued) { m.queued = false; meleeSwing(m.target && !m.target.dead ? m.target : S.lockedE); }
+      }
+    } else if (m.t > m.win) S.melee = null;
+  }
+
+  // ---- windows / timers ----
+  if (S.lanceT > 0) {
+    S.lanceT -= h / Math.max(0.32, S.ts);
+    if (S.lanceT <= 0 && S.combo > 0) S.combo = 0;
+  }
+  // ambient spawning disabled: the only thing in this field is the Angel
+  if (BOSS) bossStep(h);
+
+  // ---- enemies ----
+  var espd = Math.min(11, 3.6 + S.t / 22);
+  for (var j = 0; j < S.enemies.length; j++) {
+    var e = S.enemies[j];
+    e.ph += h * (e.stun > 0 ? 0.5 : 2);
+    e.flash = Math.max(0, e.flash - h * 4);
+    e.sqT = Math.max(0, e.sqT - h);
+    if (e.stun > 0) {
+      e.stun -= h;
+      e.v.multiplyScalar(Math.exp(-3.5 * h));
+    } else if (e.stag > 0) {
+      e.stag -= h;
+      e.v.multiplyScalar(Math.exp(-6 * h));
+    } else if (e.launched) {
+      e.v.y -= 18 * h;
+      if (e.p.y <= GROUND_Y + 1.4 && e.v.y < 0) { e.launched = false; e.v.y *= -0.2; }
+    } else {
+      // --- per-type AI ---
+      if (e.type === "drone") {
+        V3.subVectors(S.p, e.p).normalize();
+        V3b.set(Math.sin(e.ph), Math.cos(e.ph * 0.7), Math.sin(e.ph * 1.3)).multiplyScalar(0.35);
+        V3.add(V3b).normalize();
+        e.v.lerp(V3.multiplyScalar(espd), 1 - Math.exp(-1.8 * h));
+      } else if (e.type === "dart") {
+        var dd2 = e.p.distanceTo(S.p);
+        if (e.state === "app") {
+          var want = dd2 < 16 ? -1 : dd2 > 24 ? 1 : 0;
+          V3.subVectors(S.p, e.p).normalize().multiplyScalar(8 * want);
+          e.v.lerp(V3, 1 - Math.exp(-2 * h));
+          e.cd -= h;
+          if (e.cd <= 0 && dd2 < 34 && los(e.p, S.p)) { e.state = "tel"; e.st = 0; }
+        } else if (e.state === "tel") {
+          e.st += h;
+          e.tel = e.st / 0.55;
+          e.v.multiplyScalar(Math.exp(-6 * h));
+          e.aim.copy(S.p).addScaledVector(S.vel, 0.35).sub(e.p).normalize();
+          if (e.st >= 0.55) { e.state = "lunge"; e.st = 0; e.tel = 0; e.pd = false; e.v.copy(e.aim).multiplyScalar(46); }
+        } else if (e.state === "lunge") {
+          e.st += h;
+          var dl = e.p.distanceTo(S.p);
+          if (dl < 2.2) {
+            if (S.inv <= 0) {
+              if (S.dashI > 0 || S.strike || S.graceT > 0) { if (!e.pd) { e.pd = true; perfectDodge(); } }
+              else { hurt(); e.state = "tired"; e.st = 0; }
+            }
+          }
+          if (e.st > 0.5) { e.state = "tired"; e.st = 0; }
+        } else {
+          e.st += h;
+          e.v.multiplyScalar(Math.exp(-3 * h));
+          if (e.st > 0.9) { e.state = "app"; e.cd = 2 + Math.random() * 1.5; }
+        }
+      } else if (e.type === "weaver") {
+        var dw = e.p.distanceTo(S.p);
+        var want2 = dw < 20 ? -1 : dw > 28 ? 1 : 0;
+        V3.subVectors(S.p, e.p).normalize();
+        V3b.set(-V3.z, 0, V3.x).multiplyScalar(3);
+        V3.multiplyScalar(6 * want2).add(V3b);
+        e.v.lerp(V3, 1 - Math.exp(-1.6 * h));
+        e.cd -= h;
+        if (e.cd <= 0) {
+          e.cd = 2.6 + Math.random();
+          if (los(e.p, S.p)) spawnBolt(e);
+        }
+      } else if (e.type === "sentinel") {
+        var tf = Math.atan2(S.p.z - e.p.z, S.p.x - e.p.x);
+        var df = wrapAngle(tf - e.facing);
+        e.facing += clampN(df, -0.8 * h, 0.8 * h);
+        var ds = e.p.distanceTo(S.p);
+        if (e.state === "tel") {
+          e.st += h;
+          e.tel = e.st / 0.7;
+          e.v.set(0, 1.2, 0);
+          if (e.st >= 0.7) {
+            e.state = "cool"; e.st = 0; e.tel = 0; e.cd = 5;
+            S.slams.push({ x: e.p.x, z: e.p.z, t: 0, pd: false });
+            sfx.boomS();
+            S.shake = Math.max(S.shake, 0.2);
+            V3e.set(e.p.x, GROUND_Y + 0.15, e.p.z);
+            ringAt(V3e, 0.3, REDC, 4, true);
+          }
+        } else {
+          e.cd -= h;
+          if (e.state === "cool") { e.st += h; if (e.st > 1) e.state = "app"; }
+          if (ds > 4) {
+            V3.set(Math.cos(e.facing), 0, Math.sin(e.facing)).multiplyScalar(2.2);
+            e.v.lerp(V3, 1 - Math.exp(-1.5 * h));
+          } else e.v.multiplyScalar(Math.exp(-2 * h));
+          var altP = S.p.y - GROUND_Y;
+          if (e.state === "app" && e.cd <= 0 && ds < 14 && altP < 7) { e.state = "tel"; e.st = 0; }
+        }
+      } else if (e.type === "tesseron") {
+        e.v.set(0, 0, 0); e.stag = 0; e.stun = 0; e.launched = false;
+      } else if (e.type === "zenith") {
+        var ty = GROUND_Y + 18 + Math.sin(e.ph * 0.4) * 2;
+        e.v.y += (ty - e.p.y) * 2 * h;
+        e.v.y *= Math.exp(-2 * h);
+        V3.subVectors(S.p, e.p); V3.y = 0;
+        var dz2 = V3.length() || 1;
+        V3.multiplyScalar(1 / dz2);
+        V3b.set(-V3.z, 0, V3.x).multiplyScalar(2.4);
+        V3.multiplyScalar(dz2 > 30 ? 3 : dz2 < 20 ? -3 : 0).add(V3b);
+        e.v.x += (V3.x - e.v.x) * (1 - Math.exp(-1.2 * h));
+        e.v.z += (V3.z - e.v.z) * (1 - Math.exp(-1.2 * h));
+        e.cd -= h;
+        if (e.cd <= 0) { e.cd = 7; launchBombs(e); }
+      }
+    }
+    e.p.addScaledVector(e.v, h);
+    var erH = Math.hypot(e.p.x, e.p.z);
+    if (erH > ARENA_R) { e.p.x *= ARENA_R / erH; e.p.z *= ARENA_R / erH; }
+    var eFloor = e.type === "sentinel" ? GROUND_Y + 1.4 : GROUND_Y + 1.2;
+    if (e.p.y < eFloor) { e.p.y = eFloor; if (e.v.y < 0) e.v.y *= -0.4; }
+    if (e.p.y > CEIL_Y - 1) e.p.y = CEIL_Y - 1;
+    pillarPushXZ(e.p, e.cfg.r * 0.7);
+    // body contact
+    var cr = e.type === "sentinel" ? 2.4 : 1.6;
+    if (!e.dead && e.p.distanceTo(S.p) < cr && (e.type === "drone" || e.type === "sentinel")) {
+      var cutting = S.melee && S.melee.phase === "swing" && e.type === "drone";
+      if (S.inv <= 0 && S.dashI <= 0 && !S.strike && S.graceT <= 0 && !cutting) {
+        hurt();
+        if (e.type === "drone") { e.dead = true; burstShards(e.p, 10, 8, 0.15); }
+      }
+    }
+  }
+  // separation
+  for (var a2 = 0; a2 < S.enemies.length; a2++)
+    for (var b2 = a2 + 1; b2 < S.enemies.length; b2++) {
+      var ea = S.enemies[a2], eb = S.enemies[b2];
+      V3.subVectors(eb.p, ea.p);
+      var dd = V3.length();
+      var minD = ea.cfg.r + eb.cfg.r;
+      if (dd > 0.001 && dd < minD) {
+        V3.multiplyScalar(((minD - dd) / dd) * 0.5);
+        ea.p.sub(V3); eb.p.add(V3);
+      }
+    }
+  var survivors = [];
+  for (var f2 = 0; f2 < S.enemies.length; f2++) if (!S.enemies[f2].dead) survivors.push(S.enemies[f2]);
+  S.enemies = survivors;
+  if (S.lockedE && S.lockedE.dead) S.lockedE = null;
+
+  // ---- bolts ----
+  for (var b3 = 0; b3 < S.bolts.length; b3++) {
+    var bl2 = S.bolts[b3];
+    if (bl2.dead) continue;
+    bl2.life -= h;
+    V3.subVectors(S.p, bl2.p).normalize().multiplyScalar(11);
+    bl2.v.lerp(V3, 1 - Math.exp(-1.1 * h));
+    bl2.p.addScaledVector(bl2.v, h);
+    if (bl2.p.y < GROUND_Y + 0.5) bl2.p.y = GROUND_Y + 0.5;
+    if (bl2.life <= 0) bl2.dead = true;
+    else if (pillarPushXZ(bl2.p, 0.1)) { bl2.dead = true; burstShards(bl2.p, 4, 10, 0.9, null, 0.6); }
+    else {
+      var dpb = bl2.p.distanceTo(S.p);
+      if (dpb < 1.2) {
+        bl2.dead = true;
+        burstShards(bl2.p, 5, 12, 0.9, null, 0.6);
+        sfx.boltPop();
+        vulnHit();
+      }
+    }
+  }
+  var bs2 = [];
+  for (var b4 = 0; b4 < S.bolts.length; b4++) if (!S.bolts[b4].dead) bs2.push(S.bolts[b4]);
+  S.bolts = bs2;
+
+  // ---- sentinel slams ----
+  for (var s3 = S.slams.length - 1; s3 >= 0; s3--) {
+    var sl = S.slams[s3];
+    sl.t += h;
+    var slr = (sl.t / 0.8) * 16;
+    var d2p = Math.hypot(S.p.x - sl.x, S.p.z - sl.z);
+    var altP2 = S.p.y - GROUND_Y;
+    if (Math.abs(d2p - slr) < 1.2 && altP2 < 2.8 && altP2 > -0.4) {
+      if (S.inv <= 0) {
+        if (S.dashI > 0 || S.strike || S.graceT > 0) { if (!sl.pd) { sl.pd = true; perfectDodge(); } }
+        else hurt();
+      }
+    }
+    if (sl.t >= 0.8) S.slams.splice(s3, 1);
+  }
+
+  // ---- zenith bombs ----
+  for (var b5 = S.bombs.length - 1; b5 >= 0; b5--) {
+    var bo = S.bombs[b5];
+    bo.t += h;
+    if (bo.t >= 0.9) {
+      V3e.set(bo.x, GROUND_Y + 0.15, bo.z);
+      ringAt(V3e, 0.45, REDC, 8, true);
+      V3e.set(bo.x, GROUND_Y + 6, bo.z);
+      burstShards(V3e, 10, 18, 0.85, null, 0.9);
+      beamAt(bo.x, GROUND_Y + 22, bo.z, REDC);
+      sfx.boomS();
+      var dbx = Math.hypot(S.p.x - bo.x, S.p.z - bo.z);
+      if (dbx < 3 && S.p.y > GROUND_Y - 0.4) vulnHit();
+      else if (dbx < 4.5 && (S.dashI > 0 || S.strike)) perfectDodge();
+      if (dbx < 12) S.shake = Math.max(S.shake, 0.15);
+      S.bombs.splice(b5, 1);
+    }
+  }
+}
+
+// ================= frame loop =================
+var last = performance.now(), acc = 0;
+var Q = new THREE.Quaternion(), QT = new THREE.Quaternion(), EU = new THREE.Euler();
+var overShown = false;
+var TYPEKEYS = ["tesseron", "drone", "dart", "weaver", "sentinel", "zenith"];
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  var rdt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (S.mode === "menu" || S.paused) { S.mDX = 0; S.mDY = 0; renderer.render(scene, camera); return; }
+
+  // ---- look input: the camera belongs to the player, nothing else rotates it ----
+  S.yaw = wrapAngle(S.yaw - clampN(S.mDX * SENS, -0.5, 0.5));
+  S.pitch = clampN(S.pitch - clampN(S.mDY * SENS, -0.5, 0.5), -1.25, 1.25);
+  S.mDX = 0; S.mDY = 0;
+
+  if (S.charge) {
+    S.charge.t += rdt;
+    if (!S.charge.touch && S.charge.t >= 0.45) { S.charge = null; trySkewer(null); }
+  }
+  S.pdT -= rdt; S.pdCd -= rdt; S.inv -= rdt;
+
+  var tsGoal = S.mode === "dying" ? 0.22 : S.pdT > 0 ? 0.35 : S.charge ? 0.55 : (S.lanceT > 0 ? 0.3 : 1);
+  S.ts += (tsGoal - S.ts) * damp(9, rdt);
+  if (S.freeze > 0) { S.hitSlow = Math.min(1, 0.55 + S.freeze * 6); S.freeze = 0; }
+  S.hitSlow *= Math.exp(-11 * rdt);
+  var sdt = rdt * S.ts * (1 - 0.9 * S.hitSlow);
+
+  if (S.mode === "dying") {
+    S.dyingT -= rdt;
+    if (S.dyingT <= 0 && !overShown) {
+      overShown = true;
+      S.mode = "over";
+      var isBest = S.score >= best && S.score > 0;
+      best = Math.max(best, S.score);
+      $("finalScore").textContent = S.score;
+      var secs = Math.floor(S.t % 60);
+      $("finalStats").textContent = "survived " + Math.floor(S.t / 60) + ":" + (secs < 10 ? "0" : "") + secs + " \u00B7 " + S.kills + " broken \u00B7 peak \u00D7" + Math.min(9, S.maxCombo);
+      if (isBest) show($("bestTag")); else hideEl($("bestTag"));
+      show($("over"));
+    }
+  }
+
+  if (S.mode === "play" && sdt > 0) {
+    acc = Math.min(acc + sdt, H_STEP * 8);
+    while (acc >= H_STEP) { step(H_STEP); acc -= H_STEP; }
+  }
+  var alpha = acc / H_STEP;
+
+  if (S.mode === "play") updateLock(rdt, now);
+
+  // ---- player render (interpolated) ----
+  var pp = V3.lerpVectors(S.pPrev, S.p, alpha).clone();
+  player.position.copy(pp);
+  var speedDisp = S.strike ? 60 : S.dash ? 30 : S.vel.length();
+  // the lance stands upright: yaw faces the camera, a slight lean into motion
+  Q.setFromAxisAngle(UP, S.yaw);
+  V3b.set(S.vel.x, 0, S.vel.z);
+  var hSpd = V3b.length();
+  if (hSpd > 0.5) {
+    V3c.crossVectors(V3b.multiplyScalar(1 / hSpd), UP);
+    QT.setFromAxisAngle(V3c, -Math.min(0.16, hSpd * 0.008));
+    Q.multiply(QT);
+  }
+  player.quaternion.slerp(Q, damp(10, rdt));
+  player.position.y += Math.sin(S.t * 1.7) * 0.05;
+  var blink = S.inv > 0 && Math.floor(now / 70) % 2 === 0;
+  body.visible = !blink && S.mode !== "over";
+  glow.visible = body.visible;
+  glow.scale.setScalar(1 + Math.sin(now * 0.006) * 0.08 + (S.lanceT > 0 ? 0.3 : 0) + (S.charge ? Math.min(0.5, S.charge.t) : 0) + (S.melee && S.melee.phase === "swing" ? 0.18 : 0));
+
+  // dash afterimages
+  if (S.dash) {
+    var want = 1 + Math.floor(S.dash.t / 0.045);
+    while (S.ghostN < want && S.ghostN < 4) { spawnGhost(); S.ghostN++; }
+  }
+  for (var gi = 0; gi < ghosts.length; gi++) {
+    var gh = ghosts[gi];
+    if (gh.life > 0) {
+      gh.life -= rdt;
+      gh.m.material.opacity = Math.max(0, gh.life / 0.25) * 0.5;
+      if (gh.life <= 0) gh.m.visible = false;
+    }
+  }
+  // ground-skim dust kicks
+  S.dustCd -= rdt;
+  var altR = pp.y - GROUND_Y;
+  if (altR < 3.5 && speedDisp > 10 && S.dustCd <= 0 && S.mode === "play") {
+    S.dustCd = 0.06;
+    V3e.set(pp.x, GROUND_Y + 0.4, pp.z);
+    burstShards(V3e, 2, 5, 0.1, null, 0.6);
+  }
+
+  // trail
+  trailPts.unshift({ x: player.position.x, y: player.position.y, z: player.position.z });
+  if (trailPts.length > TRAIL_N) trailPts.pop();
+  V3c.subVectors(camera.position, player.position).normalize();
+  var wBase = S.strike ? (S.strike.type === "skewer" ? 2.2 : 1.6) : S.dash ? 1.8 : Math.max(0.22, Math.min(1, speedDisp / MOVE_MAX));
+  for (var i2 = 0; i2 < TRAIL_N; i2++) {
+    var p1 = trailPts[Math.min(i2, trailPts.length - 1)];
+    var p2 = trailPts[Math.min(i2 + 1, trailPts.length - 1)];
+    V3b.set(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
+    if (V3b.lengthSq() < 1e-6) V3b.set(0, 1, 0);
+    V3b.normalize().cross(V3c).normalize();
+    var wgt = 1 - i2 / TRAIL_N;
+    var w = 0.34 * wgt * wBase;
+    var o6 = i2 * 6;
+    tPos[o6] = p1.x + V3b.x * w; tPos[o6 + 1] = p1.y + V3b.y * w; tPos[o6 + 2] = p1.z + V3b.z * w;
+    tPos[o6 + 3] = p1.x - V3b.x * w; tPos[o6 + 4] = p1.y - V3b.y * w; tPos[o6 + 5] = p1.z - V3b.z * w;
+    tFade[i2 * 2] = tFade[i2 * 2 + 1] = wgt * wgt;
+  }
+  trailGeo.attributes.position.needsUpdate = true;
+  trailGeo.attributes.aFade.needsUpdate = true;
+
+  // ---- enemies: per-type instancing with reaction attributes + shadows ----
+  eMat.uniforms.uTime.value = now * 0.001;
+  var cnt = { tesseron: 0, drone: 0, dart: 0, weaver: 0, sentinel: 0, zenith: 0 };
+  var shIdx = 0;
+  for (var ei = 0; ei < S.enemies.length; ei++) {
+    var e3 = S.enemies[ei];
+    var rec = EM[e3.type];
+    var idx = cnt[e3.type];
+    if (idx >= rec.cap) continue;
+    cnt[e3.type]++;
+    V3d.lerpVectors(e3.prev, e3.p, alpha);
+    var grow = Math.min(1, (S.t - e3.born) / 0.5);
+    dummy.position.copy(V3d);
+    if (e3.sqT > 0) {
+      var kq = e3.sqT / 0.16;
+      Q.setFromUnitVectors(UP, e3.sqAx);
+      dummy.quaternion.copy(Q);
+      dummy.scale.set((1 + 0.26 * kq) * grow, (1 - 0.32 * kq) * grow, (1 + 0.26 * kq) * grow);
+    } else {
+      var wob = e3.stun > 0 ? 1 + Math.sin(now * 0.03) * 0.12 : 1 + Math.sin(e3.ph * 2) * 0.05;
+      if (e3.type === "sentinel") {
+        dummy.rotation.set(0, -e3.facing, e3.tel * 0.15 * Math.sin(now * 0.04));
+      } else if (e3.type === "zenith") {
+        dummy.rotation.set(e3.ph * 0.15, e3.ph * 0.22, e3.ph * 0.1);
+      } else if (e3.type === "dart" && (e3.state === "tel" || e3.state === "lunge")) {
+        Q.setFromUnitVectors(UP, e3.aim);
+        dummy.quaternion.copy(Q);
+      } else {
+        dummy.rotation.set(e3.ph * 0.6, e3.ph, e3.ph * 0.4);
+      }
+      dummy.scale.setScalar(grow * wob);
+    }
+    dummy.updateMatrix();
+    rec.mesh.setMatrixAt(idx, dummy.matrix);
+    rec.fl.array[idx] = e3.flash;
+    rec.tl.array[idx] = e3.tel;
+    rec.dm.array[idx] = clampN(1 - e3.hp / e3.cfg.hp, 0, 1);
+    // contact shadow
+    var hs = V3d.y - GROUND_Y;
+    dummy.position.set(V3d.x, GROUND_Y + 0.05, V3d.z);
+    dummy.rotation.set(-Math.PI / 2, 0, 0);
+    dummy.scale.setScalar(Math.max(0.2, e3.cfg.r * clampN(1.3 - hs * 0.028, 0.2, 1.3)) * grow);
+    dummy.updateMatrix();
+    eShadow.setMatrixAt(shIdx++, dummy.matrix);
+  }
+  dummy.scale.setScalar(0); dummy.updateMatrix();
+  for (var tk2 = 0; tk2 < TYPEKEYS.length; tk2++) {
+    var rec2 = EM[TYPEKEYS[tk2]];
+    for (var ri2 = cnt[TYPEKEYS[tk2]]; ri2 < rec2.cap; ri2++) rec2.mesh.setMatrixAt(ri2, dummy.matrix);
+    rec2.mesh.instanceMatrix.needsUpdate = true;
+    rec2.fl.needsUpdate = true; rec2.tl.needsUpdate = true; rec2.dm.needsUpdate = true;
+  }
+  while (shIdx < SHADOW_CAP) eShadow.setMatrixAt(shIdx++, dummy.matrix);
+  eShadow.instanceMatrix.needsUpdate = true;
+
+  // bolts
+  for (var bi2 = 0; bi2 < MAXB; bi2++) {
+    if (bi2 < S.bolts.length) {
+      var bl3 = S.bolts[bi2];
+      V3d.lerpVectors(bl3.prev, bl3.p, alpha);
+      dummy.position.copy(V3d);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.setScalar(1 + Math.sin(now * 0.02 + bi2) * 0.15);
+      dummy.updateMatrix();
+      boltMesh.setMatrixAt(bi2, dummy.matrix);
+      var hb = V3d.y - GROUND_Y;
+      dummy.position.set(V3d.x, GROUND_Y + 0.04, V3d.z);
+      dummy.rotation.set(-Math.PI / 2, 0, 0);
+      dummy.scale.setScalar(clampN(0.9 - hb * 0.03, 0.15, 0.9));
+      dummy.updateMatrix();
+      boltShadow.setMatrixAt(bi2, dummy.matrix);
+    } else {
+      dummy.scale.setScalar(0); dummy.updateMatrix();
+      boltMesh.setMatrixAt(bi2, dummy.matrix);
+      boltShadow.setMatrixAt(bi2, dummy.matrix);
+    }
+  }
+  boltMesh.instanceMatrix.needsUpdate = true;
+  boltShadow.instanceMatrix.needsUpdate = true;
+
+  // shards
+  var siE = 0, siC = 0;
+  for (var i4 = 0; i4 < MAXS; i4++) {
+    var sh = shardPool[i4];
+    if (sh.life > 0) {
+      sh.life -= rdt;
+      sh.p.addScaledVector(sh.v, rdt);
+      sh.v.multiplyScalar(Math.exp(-2.4 * rdt));
+      sh.v.y -= 5 * rdt;
+      sh.r.x += sh.rv.x * rdt; sh.r.y += sh.rv.y * rdt; sh.r.z += sh.rv.z * rdt;
+    }
+    var kk = Math.max(0, sh.life / sh.max);
+    dummy.position.copy(sh.p);
+    dummy.rotation.copy(sh.r);
+    dummy.scale.setScalar(sh.s * kk);
+    dummy.updateMatrix();
+    if (sh.ember) shardsEmber.setMatrixAt(siE++, dummy.matrix);
+    else shardsChalk.setMatrixAt(siC++, dummy.matrix);
+  }
+  dummy.scale.setScalar(0); dummy.updateMatrix();
+  while (siE < MAXS) shardsEmber.setMatrixAt(siE++, dummy.matrix);
+  while (siC < MAXS) shardsChalk.setMatrixAt(siC++, dummy.matrix);
+  shardsEmber.instanceMatrix.needsUpdate = true;
+  shardsChalk.instanceMatrix.needsUpdate = true;
+
+  // rings + beams + slashes
+  for (var i5 = 0; i5 < rings.length; i5++) {
+    var r5 = rings[i5];
+    if (r5.t < r5.dur) {
+      r5.t += rdt;
+      var k5 = Math.min(1, r5.t / r5.dur);
+      r5.m.scale.setScalar(0.5 + k5 * r5.grow);
+      r5.m.material.opacity = (1 - k5) * 0.8;
+      if (r5.flat) r5.m.rotation.set(-Math.PI / 2, 0, 0);
+      else r5.m.lookAt(camera.position);
+    } else r5.m.visible = false;
+  }
+  for (var ib = 0; ib < beams.length; ib++) {
+    var bb = beams[ib];
+    if (bb.t < bb.dur) {
+      bb.t += rdt;
+      var kb2 = Math.min(1, bb.t / bb.dur);
+      bb.m.material.opacity = (1 - kb2) * 0.65;
+      bb.m.scale.x = bb.m.scale.z = 0.14 + kb2 * 0.5;
+    } else bb.m.visible = false;
+  }
+  // blade ribbons: rebuild geometry from swept samples, fade the finished ones
+  for (var ir = 0; ir < ribbons.length; ir++) {
+    var rb = ribbons[ir];
+    if (rb.state === 0) continue;
+    if (rb.state === 2) {
+      rb.fadeT += rdt;
+      rb.mesh.material.uniforms.uAll.value = Math.max(0, 1 - rb.fadeT / 0.18);
+      if (rb.fadeT >= 0.18) { rb.state = 0; rb.mesh.visible = false; rb.samples.length = 0; continue; }
+    }
+    var sm = rb.samples, nS = sm.length;
+    if (nS < 2) { rb.mesh.visible = false; continue; }
+    rb.mesh.visible = true;
+    for (var iv = 0; iv < RIB_N; iv++) {
+      var s6 = sm[Math.min(iv, nS - 1)];
+      var age = clampN(1 - (S.t - s6.t) / 0.28, 0, 1);
+      var o7 = iv * 6;
+      rb.pos[o7] = s6.rx; rb.pos[o7 + 1] = s6.ry; rb.pos[o7 + 2] = s6.rz;
+      rb.pos[o7 + 3] = s6.tx; rb.pos[o7 + 4] = s6.ty; rb.pos[o7 + 5] = s6.tz;
+      rb.fad[iv * 2] = age * 0.55;
+      rb.fad[iv * 2 + 1] = age;
+    }
+    rb.mesh.geometry.attributes.position.needsUpdate = true;
+    rb.mesh.geometry.attributes.aFade.needsUpdate = true;
+  }
+  // ---- the telekinetic blade: every branch proposes a pose; one spring follows it ----
+  // (the spring filter makes every phase boundary velocity-continuous: zero pops)
+  var mb = S.melee;
+  var inSwing = !!(mb && (mb.phase === "windup" || mb.phase === "swing" || mb.phase === "settle"));
+  var tdt = rdt * S.ts;
+  var rootK = 6.5, dirK = 4.5;
+  if (inSwing) {
+    if (mb.phase === "windup") {
+      var tw = Math.min(mb.wDur, mb.t + alpha * H_STEP);
+      bladeDir(mb, mb.th0, V3c);
+      V3b.copy(mb.fromDir).lerp(V3c, easeInOutCubic(tw / mb.wDur)).normalize();
+      dirK = 30;
+      S.blPush = -0.45 * easeInOutCubic(tw / mb.wDur) * mb.pw; // coil before the cut
+    } else if (mb.phase === "swing") {
+      var tsw = Math.min(mb.dur, mb.t + alpha * H_STEP);
+      bladeDir(mb, mb.th0 + (mb.th1 - mb.th0) * easeOutQuart(tsw / mb.dur), V3b);
+      dirK = 60;
+      var kpu = tsw / mb.dur;
+      S.blPush = (-0.45 * Math.max(0, 1 - 2 * kpu) + 0.9 * Math.sin(3.1416 * kpu)) * mb.pw;
+      if (mb.thrust) S.blPush = 3.2 * easeOutCubic(Math.min(1, kpu * 1.35));
+    } else {
+      var tst = Math.min(mb.setDur, mb.t + alpha * H_STEP);
+      bladeDir(mb, mb.th1 + (mb.th1 > mb.th0 ? 1 : -1) * 0.5 * easeOutCubic(tst / mb.setDur), V3b);
+      dirK = 24;
+      S.blPush = Math.max(0, 0.3 * mb.pw * (1 - tst / mb.setDur));
+      if (mb.thrust) S.blPush = 3.2 * (1 - easeInOutCubic(tst / mb.setDur));
+    }
+    V3f.copy(pp).addScaledVector(mb.f, S.blPush * 0.9);
+    V3f.y += 0.3;
+    rootK = 34; // gripped hard mid-swing so cuts stay honest
+  } else if (S.strike) {
+    // speed pose: streaming behind the traversal
+    var segBl = S.strike.segs[S.strike.seg] || S.strike.segs[S.strike.segs.length - 1];
+    bezDeriv(segBl.from, segBl.ctrl, segBl.to, Math.min(1, S.strike.t / S.strike.dur), V3b);
+    V3b.multiplyScalar(-1);
+    V3f.copy(pp).addScaledVector(V3b, 1.1);
+    V3f.y += 0.5;
+    V3b.addScaledVector(UP, 0.4).normalize();
+    dirK = 14; rootK = 11;
+    S.blPush += (0 - S.blPush) * damp(10, tdt);
+  } else if (S.dash) {
+    // trailing guard behind the dash
+    V3f.copy(pp).addScaledVector(S.dash.dir, -1.2);
+    V3f.y += 0.5;
+    V3b.copy(S.dash.dir).multiplyScalar(-1).addScaledVector(UP, 0.6).normalize();
+    dirK = 12; rootK = 10;
+    S.blPush += (0 - S.blPush) * damp(10, tdt);
+  } else {
+    // at rest it hovers upright beside you, slowly circling, tilting toward the lock
+    V3b.set(-Math.sin(S.yaw), 0, -Math.cos(S.yaw));
+    V3c.set(-V3b.z, 0, V3b.x);
+    V3f.copy(pp).addScaledVector(V3c, 0.85).addScaledVector(V3b, -0.25);
+    V3f.x += Math.cos(now * 0.0011) * 0.14;
+    V3f.z += Math.sin(now * 0.0011) * 0.14;
+    V3f.y += 0.25 + Math.sin(now * 0.0017) * 0.12;
+    V3d.copy(V3c).multiplyScalar(0.2).addScaledVector(V3b, -0.06);
+    V3d.y = 1.0 + Math.sin(now * 0.0016) * 0.05;
+    V3d.normalize();
+    if (S.lockedE && !S.lockedE.dead) {
+      V3b.subVectors(S.lockedE.p, pp).normalize();
+      V3d.lerp(V3b, 0.15).normalize();
+    }
+    V3b.copy(V3d);
+    // in the chain window the grip loosens and the blade hangs in the follow-through
+    dirK = mb ? 2.4 : 4.5;
+    rootK = mb ? 5 : 6.5;
+    S.blPush += (0 - S.blPush) * damp(10, tdt);
+  }
+  S.blDir.lerp(V3b, damp(dirK, inSwing ? rdt : tdt)).normalize();
+  S.blRoot.lerp(V3f, damp(rootK, rdt));
+  var lenGoal = (mb && mb.phase === "swing") ? (mb.thrust ? 9.5 : mb.step === 3 ? BLADE_LEN_FIN : BLADE_LEN) : (mb && mb.phase === "settle") ? 4.0 : 2.9;
+  S.blLen += (lenGoal - S.blLen) * damp(14, rdt);
+  bladeCore.material.opacity += (((inSwing && mb.phase !== "windup") ? 0.95 : 0.55) - bladeCore.material.opacity) * damp(10, rdt);
+  bladeCore.visible = body.visible;
+  bladeCore.position.copy(S.blRoot).addScaledVector(S.blDir, S.blLen * 0.5);
+  Q.setFromUnitVectors(UP, S.blDir);
+  bladeCore.quaternion.copy(Q);
+  bladeCore.scale.set(1, S.blLen, 1);
+  bladeGlow.visible = bladeCore.visible;
+  bladeGlow.position.copy(bladeCore.position);
+  bladeGlow.quaternion.copy(bladeCore.quaternion);
+  bladeGlow.scale.set(1, S.blLen, 1);
+  bladeGlow.material.opacity = bladeCore.material.opacity * (0.26 + 0.05 * Math.sin(now * 0.004));
+
+  // dart aim lines
+  var li = 0;
+  for (var ei2 = 0; ei2 < S.enemies.length && li < aimLines.length; ei2++) {
+    var ed = S.enemies[ei2];
+    if (ed.type !== "dart" || ed.state !== "tel" || ed.dead) continue;
+    var lm2 = aimLines[li++];
+    var len2 = Math.min(38, ed.p.distanceTo(S.p) + 4);
+    lm2.visible = true;
+    Q.setFromUnitVectors(UP, ed.aim);
+    lm2.quaternion.copy(Q);
+    lm2.position.copy(ed.p).addScaledVector(ed.aim, len2 / 2);
+    lm2.scale.set(1, len2, 1);
+    lm2.material.opacity = 0.25 + 0.35 * ed.tel * (0.6 + 0.4 * Math.sin(now * 0.03));
+  }
+  while (li < aimLines.length) aimLines[li++].visible = false;
+
+  // bombardment marks
+  for (var bv = 0; bv < bombVis.length; bv++) {
+    var bvis = bombVis[bv];
+    if (bv < S.bombs.length) {
+      var bo2 = S.bombs[bv];
+      var kb3 = Math.min(1, bo2.t / 0.9);
+      bvis.ring.visible = bvis.disc.visible = bvis.col.visible = true;
+      bvis.ring.position.set(bo2.x, GROUND_Y + 0.12, bo2.z);
+      bvis.ring.scale.setScalar(3);
+      bvis.ring.material.opacity = 0.85;
+      bvis.disc.position.set(bo2.x, GROUND_Y + 0.1, bo2.z);
+      bvis.disc.scale.setScalar(Math.max(0.01, 3 * kb3));
+      bvis.disc.material.opacity = 0.3;
+      bvis.col.position.set(bo2.x, GROUND_Y + 13, bo2.z);
+      bvis.col.material.opacity = 0.08 + 0.3 * kb3 * (0.6 + 0.4 * Math.sin(now * 0.04));
+    } else {
+      bvis.ring.visible = bvis.disc.visible = bvis.col.visible = false;
+    }
+  }
+  // slam shockwaves
+  for (var sv = 0; sv < slamVis.length; sv++) {
+    if (sv < S.slams.length) {
+      var sl3 = S.slams[sv];
+      var kr = sl3.t / 0.8;
+      slamVis[sv].visible = true;
+      slamVis[sv].position.set(sl3.x, GROUND_Y + 0.18, sl3.z);
+      slamVis[sv].scale.setScalar(Math.max(0.01, kr * 16));
+      slamVis[sv].material.opacity = (1 - kr) * 0.7;
+    } else slamVis[sv].visible = false;
+  }
+
+  // ---- camera: rigid boom — rotation is raw mouse, only the anchor is smoothed ----
+  V3c.copy(S.vel).multiplyScalar(0.04);
+  if (V3c.length() > 0.7) V3c.setLength(0.7);
+  V3b.copy(pp).add(V3c);
+  V3b.y += 1.2;
+  if (S.melee && S.melee.phase === "swing" && S.melee.B) {
+    var swk = Math.min(1, S.melee.t / S.melee.dur);
+    V3b.addScaledVector(S.melee.thrust ? S.melee.f : S.melee.B, Math.sin(3.1416 * swk) * (S.melee.thrust ? 0.34 : 0.26) * S.melee.pw);
+  }
+  S.camAnchor.lerp(V3b, damp(16, rdt));
+  viewFwd(FWD);
+  camera.position.copy(S.camAnchor).addScaledVector(FWD, -S.dist);
+  S.shake = Math.max(0, S.shake - rdt * 2.4);
+  if (S.shake > 0) camera.position.add(V3e.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(S.shake));
+  camera.rotation.set(S.pitch, S.yaw, 0);
+  var sf = Math.min(9, Math.max(0, (speedDisp - 6) * 0.6));
+  S.speedFov += (sf - S.speedFov) * damp(3, rdt);
+  S.fovPunch = Math.max(0, S.fovPunch - S.fovPunch * damp(7, rdt));
+  S.fov += ((70 + S.speedFov + S.fovPunch) - S.fov) * damp(8, rdt);
+  camera.fov = S.fov;
+  camera.updateProjectionMatrix();
+
+  // dust wrap + dome + player shadow
+  var dp2 = dustGeo.attributes.position.array;
+  for (var i6 = 0; i6 < DUST_N; i6++) {
+    for (var a6 = 0; a6 < 3; a6++) {
+      var cc = a6 === 0 ? pp.x : a6 === 1 ? pp.y : pp.z;
+      var vv = dp2[i6 * 3 + a6];
+      if (vv - cc > 35) dp2[i6 * 3 + a6] -= 70;
+      else if (vv - cc < -35) dp2[i6 * 3 + a6] += 70;
+    }
+  }
+  dustGeo.attributes.position.needsUpdate = true;
+  dome.position.copy(pp);
+  playerShadow.position.set(pp.x, GROUND_Y + 0.06, pp.z);
+  playerShadow.material.uniforms.uOp.value = Math.max(0.08, 0.55 - altR * 0.012);
+  var subMerged = pp.y < GROUND_Y + 0.2;
+  playerShadow.material.uniforms.uHot.value = subMerged ? 1 : (S.lanceT > 0 ? 0.7 : 0);
+  playerShadow.scale.setScalar(subMerged ? 1.25 + Math.sin(now * 0.012) * 0.18 : 1 + Math.max(0, altR) * 0.018);
+
+  if (BOSS) bossFrame(rdt, now, alpha);
+
+  // ---- reticle: construct-on-acquire, blade stance, LOS dim ----
+  var hasLock = !!(S.lockedE && !S.lockedE.dead && S.mode === "play");
+  var stanceGoal = 0;
+  if (hasLock) {
+    var dPl = S.lockedE.p.distanceTo(S.p);
+    stanceGoal = dPl <= BLADE_R ? 1 : 0;
+  }
+  S.stance += (stanceGoal - S.stance) * damp(12, rdt);
+  if (hasLock) {
+    V3.lerpVectors(S.lockedE.prev, S.lockedE.p, alpha);
+    var dLock = V3.distanceTo(camera.position);
+    V3.project(camera);
+    if (V3.z < 1) {
+      retEl.style.display = "block";
+      var losOK = los(S.p, S.lockedE.p);
+      retEl.style.opacity = losOK ? 1 : 0.35;
+      var sxr = (V3.x * 0.5 + 0.5) * window.innerWidth;
+      var syr = (-V3.y * 0.5 + 0.5) * window.innerHeight;
+      var size = clampN(window.innerHeight * (3.2 * S.lockedE.cfg.r) / dLock, 64, 150);
+      retEl.style.left = sxr + "px";
+      retEl.style.top = syr + "px";
+      retEl.style.width = size + "px";
+      retEl.style.height = size + "px";
+      var ka = Math.min(1, (now - S.lockSince) / 280);
+      var kb = easeOutBack(ka);
+      retBr.setAttribute("transform", "scale(" + (2.1 - 1.1 * kb).toFixed(3) + ") rotate(" + ((1 - ka) * 135 + S.stance * 45).toFixed(1) + ")");
+      retBr.setAttribute("opacity", Math.min(1, ka * 2.5).toFixed(2));
+      retCirc.setAttribute("stroke-dashoffset", (251.4 * (1 - easeOutCubic(ka))).toFixed(1));
+      retTicks.setAttribute("opacity", ka > 0.55 ? ((ka - 0.55) / 0.45).toFixed(2) : "0");
+      retCore.setAttribute("opacity", ka >= 1 ? (0.65 + 0.35 * Math.sin(now * 0.012)).toFixed(2) : "0");
+      retSpin.setAttribute("transform", "rotate(" + ((now * 0.1) % 360).toFixed(1) + ")");
+      var lockCol = S.lanceT > 0 ? "#FFD98A" : "#FF4438";
+      retCirc.setAttribute("stroke", lockCol);
+      retBr.setAttribute("stroke", lockCol);
+      if (ka >= 1 && !S.lockChirped) { S.lockChirped = true; blip(1500, 1950, 0.05, "sine", 0.045); }
+      if (S.charge) {
+        retRing.style.display = "block";
+        var pct = Math.min(1, S.charge.t / (S.charge.touch ? 0.4 : 0.45)) * 360;
+        var col = S.charge.t >= (S.charge.touch ? 0.4 : 0.3) ? "#FFD98A" : "#FF4438";
+        retRing.style.background = "conic-gradient(" + col + " " + pct + "deg, rgba(232,238,242,.12) 0deg)";
+        retRing.style.webkitMask = "radial-gradient(circle, transparent 58%, #000 60%)";
+        retRing.style.mask = "radial-gradient(circle, transparent 58%, #000 60%)";
+      } else retRing.style.display = "none";
+    } else retEl.style.display = "none";
+  } else { retEl.style.display = "none"; retRing.style.display = "none"; }
+  crossEl.style.background = hasLock ? "#FF4438" : "#E8EEF2";
+  crossEl.style.display = (S.lockActive || isTouch) ? "block" : "none";
+  var dashK = clampN(1 - S.dashCd / DASH_CD, 0, 1);
+  dashFill.style.width = (dashK * 100) + "%";
+  dashFill.style.background = dashK >= 1 ? "#E8EEF2" : "rgba(232,238,242,.45)";
+
+  // edge arrows for close off-screen threats
+  var arrowUsed = 0;
+  if (S.mode === "play") {
+    var threats = [];
+    for (var ie = 0; ie < S.enemies.length; ie++) {
+      var te = S.enemies[ie];
+      var dte = te.p.distanceTo(S.p);
+      if (dte < 34) threats.push({ e: te, d: dte });
+    }
+    threats.sort(function (a, b) { return a.d - b.d; });
+    for (var ia = 0; ia < threats.length && arrowUsed < 4; ia++) {
+      V3.copy(threats[ia].e.p).applyMatrix4(camera.matrixWorldInverse);
+      var onScreen = false;
+      if (V3.z < 0) {
+        V3b.copy(threats[ia].e.p).project(camera);
+        onScreen = Math.abs(V3b.x) < 0.92 && Math.abs(V3b.y) < 0.9;
+      }
+      if (onScreen) continue;
+      var dirX = V3.x, dirY = V3.y;
+      if (V3.z > 0) { dirX = -dirX; dirY = -dirY; }
+      var m3 = Math.hypot(dirX, dirY) || 1;
+      dirX /= m3; dirY /= m3;
+      var ar = arrows[arrowUsed++];
+      var cxp = window.innerWidth / 2 + dirX * window.innerWidth * 0.4;
+      var cyp = window.innerHeight / 2 - dirY * window.innerHeight * 0.4;
+      var deg = Math.atan2(dirX, dirY) * 57.2958;
+      ar.style.opacity = Math.max(0.25, 1 - threats[ia].d / 34);
+      ar.style.left = (cxp - 7) + "px";
+      ar.style.top = (cyp - 8) + "px";
+      ar.style.transform = "rotate(" + deg + "deg)";
+    }
+  }
+  for (var ja = arrowUsed; ja < 4; ja++) arrows[ja].style.opacity = 0;
+
+  // ---- HUD ----
+  scoreEl.textContent = S.score;
+  var mult = Math.min(9, S.combo);
+  comboEl.textContent = mult > 1 ? "\u00D7" + mult : "";
+  comboEl.style.color = mult >= 5 ? GOLD : CHALK;
+  lanceEl.style.width = S.lanceT > 0 ? ((S.lanceT / 0.8) * 64) + "px" : "0";
+  bestEl.textContent = "BEST " + best;
+  heatFill.style.width = S.heat + "%";
+  heatFill.style.background = S.heat >= COST_SKEWER ? "#FFD98A" : "#FF6B3D";
+  flareBtn.style.opacity = S.heat >= COST_FLARE ? 1 : 0.35;
+  dashBtn.style.opacity = dashK >= 1 ? 1 : 0.35;
+  if (S.t > 10) hintEl.style.opacity = Math.max(0, 0.6 * (13 - S.t) / 3);
+  flashRed.style.opacity = Math.max(0, parseFloat(flashRed.style.opacity || 0) - rdt * 2.2);
+  flashHit.style.opacity = Math.max(0, parseFloat(flashHit.style.opacity || 0) - rdt * 1.6);
+  tintSlow.style.opacity = Math.max(0, (1 - S.ts) * 1.1 - 0.1);
+
+  for (var i7 = pops.length - 1; i7 >= 0; i7--) {
+    var pop = pops[i7];
+    pop.life -= rdt; pop.wp.y += rdt * 1.6;
+    V3.copy(pop.wp).project(camera);
+    if (pop.life <= 0 || V3.z > 1) { hudEl.removeChild(pop.d); pops.splice(i7, 1); continue; }
+    pop.d.style.left = ((V3.x * 0.5 + 0.5) * window.innerWidth) + "px";
+    pop.d.style.top = ((-V3.y * 0.5 + 0.5) * window.innerHeight) + "px";
+    pop.d.style.opacity = Math.min(1, pop.life * 2);
+  }
+
+  sfx.wind(Math.min(1, (S.strike ? 0.9 : S.dash ? 0.8 : speedDisp / 24) + (S.lanceT > 0 ? 0.15 : 0)));
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(frame);
+
+// ================= flow =================
+function startGame() {
+  audioEnsure(); sfx.begin();
+  overShown = false;
+  resetGame();
+  summonTesseron();
+  hideEl($("menu")); hideEl($("over")); hideEl($("resume"));
+  requestLock();
+}
+$("startBtn").addEventListener("click", startGame);
+$("againBtn").addEventListener("click", startGame);
+$("resumeBtn").addEventListener("click", function () { requestLock(); });
+$("menuControls").innerHTML = isTouch
+  ? "tap: lance / blade string \u00B7 hold: cleave (30) \u00B7 longer: skewer (55)<br>DASH + FLARE (20) buttons \u00B7 drag to look"
+  : "WASD: move \u00B7 SPACE: fly \u00B7 C: dive under the floor \u00B7 SHIFT: dash \u00B7 LMB: blade \u00B7 F: lance<br>RMB tap: cleave (30) \u00B7 RMB hold: skewer (55) \u00B7 E: flare (20) \u00B7 esc pauses";
+
+window.addEventListener("resize", function () {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+})();
+</script>
+</body>
+</html>
